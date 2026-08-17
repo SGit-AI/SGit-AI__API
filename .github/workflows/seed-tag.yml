@@ -1,0 +1,25 @@
+name: Seed Tag
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  seed-tag:
+    name: "Create v0.1.0 seed tag"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Tag bootstrap commit as v0.1.0
+        run: |
+          if git rev-parse -q --verify refs/tags/v0.1.0 >/dev/null; then
+            echo "tag v0.1.0 already exists"
+          else
+            git tag v0.1.0 263c21f05750b0629f1c2ec9b5fce8ad1aae9d5f
+            git push origin v0.1.0
+          fi
