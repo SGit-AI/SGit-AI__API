@@ -35,6 +35,7 @@ jobs:
   deploy:
     name: "Publish vault projection"
     runs-on: ubuntu-latest
+    timeout-minutes: 10                  # Pages deployments hard-timeout at 10 minutes anyway
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
