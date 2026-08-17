@@ -1,0 +1,15 @@
+name: CI Pipeline - DEV
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - dev
+
+jobs:
+  ci-dev:
+    uses: ./.github/workflows/ci-pipeline.yml
+    with:
+      git_branch          : 'dev'
+      release_type        : 'minor'
+      should_increment_tag: true
+    secrets: inherit

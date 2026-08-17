@@ -1,0 +1,19 @@
+[tool.poetry]
+name        = "sgit_ai_api"
+version     = "v0.1.0"
+description = "SGit-AI__API"
+authors     = ["Dinis Cruz <dinis.cruz@owasp.org>"]
+license     = "Apache 2.0"
+readme      = "README.md"
+homepage    = "https://github.com/SGit-AI/SGit-AI__API"
+repository  = "https://github.com/SGit-AI/SGit-AI__API"
+
+packages    = [ { include = "sgit_ai_api" } ]
+
+[tool.poetry.dependencies]
+python      = "^3.12"
+osbot-utils = "*"
+
+[build-system]
+requires = ["poetry-core>=1.9.1"]
+build-backend = "poetry.core.masonry.api"
