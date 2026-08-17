@@ -1,0 +1,42 @@
+{
+  "title": "SGit API — Reference Vault",
+  "tagline": "A conformance target: if you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
+  "claims": [
+    {
+      "id": "computed-names",
+      "title": "Names are computed, never listed",
+      "status": "holds",
+      "note": "Every object this page needed — ref, index, commit, tree, blob — has a name derived from the read key or a content hash. No listing or discovery call exists to depend on."
+    },
+    {
+      "id": "static-get",
+      "title": "Reads are plain GETs",
+      "status": "holds",
+      "note": "The read path is a sequence of GETs of deterministic paths. A static file host serves them unchanged; the live API and GitHub Pages are interchangeable for reading."
+    },
+    {
+      "id": "client-decrypts",
+      "title": "Decryption happens client-side",
+      "status": "holds",
+      "note": "AES-256-GCM in the browser or CLI. The store — S3, Lambda, GitHub Pages, or a git repository — only ever holds ciphertext under opaque ids."
+    },
+    {
+      "id": "batch-breaks",
+      "title": "Batch reads break on static",
+      "status": "known gap",
+      "note": "A batch is a POST carrying a list of ids. The CLI's clone depends on it today; the browser transport already fans out to parallel GETs. The gap is pinned by a test that will flip when the CLI ships static fan-out."
+    },
+    {
+      "id": "writes-break",
+      "title": "Writes break on static",
+      "status": "by design",
+      "note": "A published vault is a read-only snapshot. A write attempt is refused — there is nothing to accept it, and that is the point rather than a limitation."
+    },
+    {
+      "id": "auth-breaks",
+      "title": "Authentication breaks on static",
+      "status": "by design",
+      "note": "There is no access decision left for a server to make: the read key is the whole credential, published deliberately, and the ciphertext is the protection."
+    }
+  ]
+}

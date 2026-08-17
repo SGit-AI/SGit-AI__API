@@ -1,0 +1,2 @@
+# Vault ciphertext: no meaningful line diff, and a textual merge would corrupt it.
+vault/.sg_vault/** binary -diff -merge
