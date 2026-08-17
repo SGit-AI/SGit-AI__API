@@ -216,3 +216,10 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- SG/Send vault boundary (side-by-side pattern; see vault/README.md) ---
+# The plaintext credential tier must NEVER be committed: vault key, push token,
+# unwrapped private keys. bare/ (ciphertext) IS committed — that is the mirror.
+vault/.sg_vault/local/
+vault/.sg_vault/work/
+*.pem

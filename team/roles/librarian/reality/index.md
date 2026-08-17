@@ -4,7 +4,7 @@
 Rule: if it is not listed here, it does not exist. Anything described elsewhere that is not
 here must be labelled "PROPOSED — does not exist yet."
 
-**Last verified:** 2026-08-17 (repo bootstrap)
+**Last verified:** 2026-08-17 (repo bootstrap + CI verified live + reference vault added)
 
 ---
 
@@ -23,6 +23,24 @@ here must be labelled "PROPOSED — does not exist yet."
 |---|---|---|
 | Version tests | `tests/unit/test_Version.py` | 3 tests |
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
+| Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests; real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
+
+### Reference vault (static-deployment conformance target)
+
+| Item | Location / value | Notes |
+|---|---|---|
+| Vault working tree | `vault/` (README, `content.json`, `index.html`, `app.json`) | Plaintext — committed deliberately (published vault) |
+| Encrypted object store | `vault/.sg_vault/bare/` | Ciphertext mirror, committed (side-by-side pattern) |
+| Credential tier | `vault/.sg_vault/local/` | **git-ignored — never committed**; write key escrowed out-of-band |
+| Vault ID | `ivpijuvg` | |
+| Read key (published) | `c28b118c…0ab817` (full value in `vault/README.md` context, workflow, tests) | Read-only capability; publication is deliberate and permanent |
+| Pages deploy workflow | `.github/workflows/deploy-vault-pages.yml` | Projects `bare/` to `api/vault/read/ivpijuvg/bare/…` on GitHub Pages; needs one-time Pages enablement (Source: GitHub Actions) if `configure-pages` cannot enable it |
+
+Code-verified conformance findings (2026-08-17, sgit-ai v0.15.0):
+- Every committed vault object is fetchable byte-identical by plain GET at the live-API path shape — the static read claim **holds** at the storage layer.
+- The named-ref filename derives from the read key alone (`Vault__Crypto.derive_ref_file_id`) — no listing/discovery call exists.
+- **Gap (pinned by test):** `sgit clone` depends on `POST /api/vault/batch/…` and fails against a static host; the browser transport's `SG_STATIC` fan-out has no CLI equivalent yet.
+- A never-pushed vault's named ref points at the empty init commit — `sgit push` (to any SG/Send server, including a local in-memory one) is what forwards it. The committed `bare/` mirror is byte-parity with the server after push.
 
 ### CI
 

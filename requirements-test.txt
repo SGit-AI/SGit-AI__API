@@ -4,3 +4,6 @@ osbot-utils
 pytest
 pytest-cov
 coverage
+
+# static-vault conformance suite (tests/unit/vault_conformance) drives the real CLI
+sgit-ai
