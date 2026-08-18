@@ -1,0 +1,72 @@
+{
+  "title": "Deploy SG/Send",
+  "theme": { "mode": "light", "accent": "#4ecdc4", "font": "sans", "density": "comfortable", "background": "#f6fefe" },
+  "navigation": [
+    { "label": "Start Here",  "anchor": "start-here" },
+    { "label": "Targets",     "anchor": "deployment-targets" },
+    { "label": "Runbooks",    "anchor": "runbooks" },
+    { "label": "Scripts",     "anchor": "scripts--templates" },
+    { "label": "Reference",   "anchor": "reference" }
+  ],
+  "components": [
+    {
+      "type": "hero",
+      "props": {
+        "title": "Run Your Own SG/Send Server",
+        "subtitle": "Zero-knowledge encrypted vaults, on your infrastructure — Docker, AWS, GCP, Heroku, or a static host",
+        "color": "#0d1117",
+        "height": "medium",
+        "align": "center"
+      }
+    },
+    {
+      "type": "section",
+      "props": { "title": "Start Here" },
+      "children": [
+        { "type": "markdown", "props": { "file": "run-your-own-server/README.md" } }
+      ]
+    },
+    {
+      "type": "section",
+      "props": { "title": "Deployment Targets", "layout": "wide" },
+      "children": [
+        {
+          "type": "cards",
+          "props": {
+            "columns": 3,
+            "items": [
+              { "title": "Docker",            "description": "One command, runs anywhere. The fastest path to a working server — available today.", "link": "deploy/docker/README.md" },
+              { "title": "AWS Lambda",        "description": "Serverless, one-click CloudFormation stack. Pay-per-request, scales to zero.",         "link": "deploy/aws-lambda/README.md" },
+              { "title": "AWS EC2 Appliance", "description": "A dedicated instance from the SG/Send AMI, with your own domain and auto-TLS.",        "link": "deploy/aws-ec2/README.md" },
+              { "title": "AWS ECS / Fargate", "description": "Long-running, multi-replica cluster behind a load balancer. One stack, full lifecycle.", "link": "deploy/aws-fargate/README.md" },
+              { "title": "GCP Cloud Run",     "description": "The same container on Google Cloud — deploy with one gcloud command or a button.",     "link": "deploy/gcp-cloud-run/README.md" },
+              { "title": "Heroku",            "description": "Container deployment via the Heroku registry or a Deploy button.",                     "link": "deploy/heroku/README.md" },
+              { "title": "Static Hosting",    "description": "Publish a read-only vault projection to GitHub Pages, S3, Netlify, and more.",         "link": "deploy/static-hosting/README.md" }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "type": "section",
+      "props": { "title": "Runbooks", "background": "alt" },
+      "children": [
+        { "type": "markdown", "props": { "text": "Step-by-step, copy-paste runbooks for the common operations:\n\n- [Deploy into a new AWS region](runbooks/new-region/README.md)\n- [Deploy into a new AWS account](runbooks/new-aws-account/README.md)" } }
+      ]
+    },
+    {
+      "type": "section",
+      "props": { "title": "Scripts & Templates" },
+      "children": [
+        { "type": "markdown", "props": { "file": "scripts/README.md" } }
+      ]
+    },
+    {
+      "type": "section",
+      "props": { "title": "Reference", "background": "alt" },
+      "children": [
+        { "type": "markdown", "props": { "text": "- [Configuration reference](reference/configuration.md) — every environment variable\n- [Storage modes](reference/storage-modes.md) — memory / disk / S3, and when to use each\n- [Security model](reference/security-model.md) — zero-knowledge, the access key, what the server can and cannot see\n\n---\n\n*This vault is the living home of SG/Send deployment documentation, maintained by the SG/Send team. See [MAINTENANCE.md](MAINTENANCE.md) for how it is updated.*" } }
+      ]
+    }
+  ]
+}

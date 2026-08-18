@@ -1,11 +1,41 @@
 {
-  "title": "SGit API — Reference Vault",
-  "tagline": "The documentation of the SGit API, served from inside an encrypted vault. If you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
-  "docs": [
-    {"id": "what-is-the-sgit-api", "path": "docs/what-is-the-sgit-api.md", "title": "What is the SGit API"},
-    {"id": "read-contract",        "path": "docs/read-contract.md",        "title": "The read contract"},
-    {"id": "static-hosting",       "path": "docs/static-hosting.md",       "title": "Static hosting — this deployment"},
-    {"id": "roadmap",              "path": "docs/roadmap.md",              "title": "Roadmap"}
+  "title": "deploy.sgit.ai",
+  "tagline": "How (and where) to deploy sgit's server side — guidance, runbooks and reference, served from inside an encrypted vault. If you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
+  "sections": [
+    {"title": "Start", "items": [
+      {"id": "start-here",  "path": "00-START-HERE.md",  "title": "Deploy SG/Send — start here"},
+      {"id": "status",      "path": "docs/status.md",    "title": "The refactoring, live"}
+    ]},
+    {"title": "Deploy targets", "items": [
+      {"id": "run-your-own-server", "path": "run-your-own-server/README.md",   "title": "Run your own server"},
+      {"id": "docker",              "path": "deploy/docker/README.md",         "title": "Docker"},
+      {"id": "aws-lambda",          "path": "deploy/aws-lambda/README.md",     "title": "AWS Lambda"},
+      {"id": "aws-ec2",             "path": "deploy/aws-ec2/README.md",        "title": "AWS EC2"},
+      {"id": "aws-fargate",         "path": "deploy/aws-fargate/README.md",    "title": "AWS Fargate"},
+      {"id": "gcp-cloud-run",       "path": "deploy/gcp-cloud-run/README.md",  "title": "GCP Cloud Run"},
+      {"id": "heroku",              "path": "deploy/heroku/README.md",         "title": "Heroku"},
+      {"id": "static-hosting",      "path": "deploy/static-hosting/README.md", "title": "Static hosting"}
+    ]},
+    {"title": "Runbooks & scripts", "items": [
+      {"id": "new-aws-account", "path": "runbooks/new-aws-account/README.md", "title": "New AWS account"},
+      {"id": "new-region",      "path": "runbooks/new-region/README.md",      "title": "New region"},
+      {"id": "scripts",         "path": "scripts/README.md",                  "title": "Scripts index"}
+    ]},
+    {"title": "Reference", "items": [
+      {"id": "configuration",  "path": "reference/configuration.md",  "title": "Configuration"},
+      {"id": "storage-modes",  "path": "reference/storage-modes.md",  "title": "Storage modes"},
+      {"id": "security-model", "path": "reference/security-model.md", "title": "Security model"}
+    ]},
+    {"title": "The SGit API", "items": [
+      {"id": "what-is-the-sgit-api", "path": "docs/what-is-the-sgit-api.md", "title": "What is the SGit API"},
+      {"id": "read-contract",        "path": "docs/read-contract.md",        "title": "The read contract"},
+      {"id": "this-deployment",      "path": "docs/static-hosting.md",       "title": "This site as a conformance test"},
+      {"id": "roadmap",              "path": "docs/roadmap.md",              "title": "Roadmap"}
+    ]},
+    {"title": "About", "items": [
+      {"id": "about-this-vault", "path": "README.md",      "title": "About this vault"},
+      {"id": "maintenance",      "path": "MAINTENANCE.md", "title": "How it is maintained"}
+    ]}
   ],
   "claims": [
     {

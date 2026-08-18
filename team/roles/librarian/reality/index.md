@@ -25,13 +25,13 @@ here must be labelled "PROPOSED — does not exist yet."
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
 | Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests; real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
 
-### Reference vault (static-deployment conformance target + SGit API docs vault)
+### The deploy.sgit.ai vault (conformance target + SGit API docs + sgit deploy section)
 
 | Item | Location / value | Notes |
 |---|---|---|
-| Vault working tree | `vault/` (README, `content.json`, `docs/*.md` × 4, `index.html` docs app, `app.json`) | Plaintext — committed deliberately (published vault); since 17 Aug also the API's documentation |
-| Static site source | `pages/` (`index.html`, `reader.js`, `llms.txt`) | The GitHub Pages shell: publishing page + in-browser vault reader (WebCrypto/Node, mirrors `Vault__Crypto`) — no pytest coverage, verified manually in Node |
-| Live projection | https://sgit-ai.github.io/SGit-AI__API/ | Docs decrypted and rendered in-browser from this same origin |
+| Vault working tree | `vault/` — 26 files: deploy hub + 7 targets + 2 runbooks + scripts + 3 reference (republished 18 Aug from `fyofmkvr` @ `obj-cas-imm-000f0325258c`), `docs/*.md` × 5 (incl. `status.md`, the live refactoring status), sectioned `content.json`, branded docs app | Plaintext — committed deliberately (published vault). Per Dinis (18 Aug): this repo/site IS the deploy section |
+| Static site source | `pages/` (`index.html`, `reader.js`, `llms.txt`) | deploy.sgit.ai shell in sgit.ai's light branding: sectioned live viewer + in-browser vault reader (WebCrypto/Node, mirrors `Vault__Crypto`) — no pytest coverage, verified manually in Node |
+| Live projection | https://sgit-ai.github.io/SGit-AI__API/ — target hostname **deploy.sgit.ai** (DNS + Pages custom domain pending, human action) | Docs decrypted and rendered in-browser from this same origin |
 | Encrypted object store | `vault/.sg_vault/bare/` | Ciphertext mirror, committed (side-by-side pattern) |
 | Credential tier | `vault/.sg_vault/local/` | **git-ignored — never committed**; write key escrowed out-of-band |
 | Vault ID | `ivpijuvg` | |

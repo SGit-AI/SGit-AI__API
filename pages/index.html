@@ -3,66 +3,93 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SGit API — docs from an encrypted vault</title>
+<title>deploy.sgit.ai — how (and where) to deploy sgit</title>
+<meta name="description" content="Deployment guidance for sgit's server side — Docker, AWS, GCP, Heroku, static hosting — served live from an encrypted vault this static host cannot read.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230f766e'/%3E%3Ctext x='16' y='22' font-family='ui-monospace,monospace' font-size='15' font-weight='700' fill='%23faf9f5' text-anchor='middle'%3E%E2%86%91s%3C/text%3E%3C/svg%3E">
 <style>
-  :root{ --paper:#0d1117; --panel:#151b24; --line:#232c3a; --ink:#dbe4ee; --dim:#8794a5;
-         --accent:#5fb4a2; --warn:#d8b26a; --design:#7d9dd1; }
+  /* Palette mirrors sgit.ai's shared stylesheet (light theme). */
+  :root{ --bg:#faf9f5; --panel:#ffffff; --panel2:#f2f0e9; --line:#e5e1d5; --line2:#d5d0c2;
+         --fg:#1c1d21; --dim:#5c5f66; --dim2:#8a8d94;
+         --accent:#0f766e; --accent-dk:#115e59; --yellow:#a16207; --warm:#b45309;
+         --term-bg:#0d1117; --term-green:#3fb950; }
   *{ box-sizing:border-box }
-  body{ margin:0; background:var(--paper); color:var(--ink); line-height:1.6;
+  body{ margin:0; background:var(--bg); color:var(--fg); line-height:1.6;
         font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .wrap{ max-width:1080px; margin:0 auto; padding:2.6rem 1.3rem 3.5rem }
-  .rule{ width:54px; height:2px; background:var(--accent); margin-bottom:1.1rem }
-  h1{ font-size:clamp(1.7rem,4.5vw,2.4rem); font-weight:650; margin:0 0 .6rem }
-  .lead{ color:var(--dim); max-width:70ch }
-  .lead b{ color:var(--ink) }
-  h2{ font-size:1.2rem; font-weight:640; margin:2.6rem 0 .6rem }
-  h3{ font-size:1rem; font-weight:600; margin:1.4rem 0 .4rem }
+  .topbar{ display:flex; align-items:center; gap:.85rem; padding:.7rem 1.2rem;
+           border-bottom:1px solid var(--line); background:var(--panel);
+           position:sticky; top:0; z-index:5 }
+  .brand{ font-weight:800; font-size:1.05rem; color:var(--fg); letter-spacing:-.02em;
+          white-space:nowrap; text-decoration:none }
+  .brand span{ color:var(--accent) }
+  .stage-pill{ font-size:.66rem; letter-spacing:.05em; text-transform:uppercase; color:var(--dim);
+               border:1px solid var(--line2); border-radius:999px; padding:.1rem .5rem }
+  .topbar .links{ margin-left:auto; display:flex; gap:1rem }
+  .topbar .links a{ font-size:.8rem; color:var(--dim); text-decoration:none }
+  .topbar .links a:hover{ color:var(--accent) }
+  .wrap{ max-width:1120px; margin:0 auto; padding:2.2rem 1.3rem 3.5rem }
+  h1{ font-size:clamp(1.6rem,4.3vw,2.3rem); font-weight:700; margin:0 0 .6rem; letter-spacing:-.01em }
+  .lead{ color:var(--dim); max-width:72ch }
+  .lead b{ color:var(--fg) }
+  h2{ font-size:1.2rem; font-weight:650; margin:2.6rem 0 .6rem }
   p, li{ color:var(--dim); font-size:.93rem }
-  strong{ color:var(--ink) } a{ color:var(--accent) }
-  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel);
+  strong{ color:var(--fg) } a{ color:var(--accent) }
+  a.doclink{ cursor:pointer; text-decoration:underline; text-underline-offset:2px }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel2);
         border:1px solid var(--line); border-radius:6px; padding:.08rem .35rem; overflow-wrap:anywhere }
   pre{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem;
        overflow-x:auto; font-size:.78rem; line-height:1.5 }
   pre code{ background:none; border:none; padding:0 }
   table{ border-collapse:collapse; width:100%; margin:.8rem 0; font-size:.86rem }
   th,td{ border:1px solid var(--line); padding:.45rem .65rem; text-align:left; color:var(--dim); vertical-align:top }
-  th{ color:var(--ink); background:var(--panel) }
+  th{ color:var(--fg); background:var(--panel2) }
 
   /* live docs viewer */
   .viewer{ display:flex; border:1px solid var(--line); border-radius:14px; overflow:hidden;
-           margin-top:1.2rem; background:color-mix(in srgb, var(--panel) 55%, transparent); min-height:340px }
-  .viewer nav{ width:215px; flex-shrink:0; border-right:1px solid var(--line); padding:1rem 0 }
-  .viewer nav a{ display:block; padding:.4rem 1.1rem; color:var(--dim); text-decoration:none;
-                 font-size:.86rem; border-left:2px solid transparent }
-  .viewer nav a:hover{ color:var(--ink) }
-  .viewer nav a.active{ color:var(--accent); border-left-color:var(--accent);
+           margin-top:1.2rem; background:var(--panel); min-height:420px }
+  .viewer nav{ width:235px; flex-shrink:0; border-right:1px solid var(--line); padding:.8rem 0;
+               background:var(--panel) }
+  .viewer nav .sec{ padding:.85rem 1.1rem .2rem; font-size:.66rem; letter-spacing:.08em;
+                    text-transform:uppercase; color:var(--dim2); font-weight:600 }
+  .viewer nav a{ display:block; padding:.3rem 1.1rem; color:var(--dim); text-decoration:none;
+                 font-size:.85rem; border-left:2px solid transparent }
+  .viewer nav a:hover{ color:var(--fg) }
+  .viewer nav a.active{ color:var(--accent-dk); border-left-color:var(--accent); font-weight:600;
                         background:color-mix(in srgb, var(--accent) 7%, transparent) }
-  .viewer .doc{ flex:1; min-width:0; padding:1.4rem clamp(1rem,3vw,2rem); }
-  .viewer .doc h1{ font-size:1.45rem } .viewer .doc h2{ margin-top:1.6rem }
-  .status{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.7rem; color:var(--dim);
+  .viewer .doc{ flex:1; min-width:0; padding:1.4rem clamp(1rem,3vw,2rem) 2rem }
+  .viewer .doc h1{ font-size:1.45rem } .viewer .doc h2{ margin-top:1.6rem; font-size:1.08rem }
+  .viewer .doc h3{ font-size:.95rem; font-weight:650; margin:1.3rem 0 .4rem }
+  .status{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.7rem; color:var(--dim2);
            letter-spacing:.03em; margin:.6rem 0 0 }
   .status b{ color:var(--accent); font-weight:600 }
   details.panel{ margin-top:.8rem; border:1px solid var(--line); border-radius:10px; background:var(--panel) }
   details.panel summary{ cursor:pointer; padding:.55rem .9rem; font-size:.8rem; color:var(--dim) }
   details.panel pre{ margin:0; border:none; border-top:1px solid var(--line); border-radius:0 0 10px 10px;
-                     max-height:260px; overflow:auto; font-size:.7rem }
+                     max-height:260px; overflow:auto; font-size:.7rem; background:var(--term-bg); color:var(--term-green) }
   .keybox{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8rem; background:var(--panel);
            border:1px solid var(--line); border-radius:10px; padding:.8rem 1rem; overflow-wrap:anywhere }
-  @media (max-width:700px){ .viewer{ flex-direction:column } .viewer nav{ width:auto; border-right:none; border-bottom:1px solid var(--line) } }
+  @media (max-width:760px){ .viewer{ flex-direction:column } .viewer nav{ width:auto; border-right:none; border-bottom:1px solid var(--line) } }
 </style>
 </head>
 <body>
+<div class="topbar">
+  <a class="brand" href="#start-here">deploy<span>.sgit.ai</span></a>
+  <span class="stage-pill">beta</span>
+  <div class="links">
+    <a href="https://sgit.ai" target="_blank" rel="noopener">sgit.ai</a>
+    <a href="https://github.com/SGit-AI/SGit-AI__API" target="_blank" rel="noopener">GitHub</a>
+    <a href="llms.txt">llms.txt</a>
+  </div>
+</div>
 <div class="wrap">
-  <div class="rule"></div>
-  <h1>SGit API</h1>
-  <p class="lead">The server side of the sgit protocol: a service whose whole job is to
-  <b>store ciphertext under opaque ids and give it back</b>. These docs practice what they
-  preach — everything below is being read out of an <b>encrypted vault served by this
-  static host</b>: your browser derived the filenames from a published read-only key,
-  fetched ciphertext with plain GETs from this same origin, and decrypted it locally with
-  the Web Crypto API. There is no server here, which is the point.</p>
+  <h1>Deploy sgit's server side</h1>
+  <p class="lead">Technical, architectural and devops guidance for running your own
+  zero-knowledge vault server — Docker, AWS, GCP, Heroku, or no server at all — plus the
+  live status of the <b>SGit API refactoring</b>. These pages practice what they preach:
+  everything below is being read out of an <b>encrypted vault served by this static
+  host</b>. Your browser derived the filenames from a published read-only key, fetched
+  ciphertext with plain GETs from this same origin, and decrypted it locally with the Web
+  Crypto API. The host cannot read what you are reading.</p>
 
-  <h2>The documentation, live from the vault</h2>
   <div class="viewer">
     <nav id="nav"></nav>
     <div class="doc" id="doc"><p>opening vault…</p></div>
@@ -71,47 +98,40 @@
   <details class="panel"><summary>vault panel — every object this page fetched</summary><pre id="log"></pre></details>
 
   <h2>The credential, in the open</h2>
-  <p>The read key is published deliberately. It grants read, and only read — it is derived
-  one-way from the vault key and cannot be turned back into write access. The write key is
+  <p>The read key is published deliberately. It grants read, and only read — derived
+  one-way from the vault key, it cannot be turned back into write access. The write key is
   escrowed out-of-band and has never entered the repository.</p>
   <div class="keybox">c28b118c9a7a101910efa24a3a49b6cc6dbec8e8dcdc8fea671e89cecb0ab817:ivpijuvg</div>
-  <p>From the CLI (note <code>--read-key</code> — the current CLI release does not parse the
-  prefixed shorthand) against a live SG/Send server holding this vault, or — once the CLI
-  ships static reads (<a href="https://github.com/SGit-AI/SGit-AI__API/blob/dev/team/comms/briefs/08/17/v0.1.2__proposal-brief__static-clone-a-get-is-open-a-file-and-a-folder-is-a-remote.md">proposal filed</a>) — against this very page's origin:</p>
+  <p>From the CLI (<code>--read-key</code> — the current release does not parse the prefixed
+  shorthand) against a live SG/Send server holding this vault, or — once the CLI ships
+  static reads (<a href="https://github.com/SGit-AI/SGit-AI__API/blob/dev/team/comms/briefs/08/17/v0.1.2__proposal-brief__static-clone-a-get-is-open-a-file-and-a-folder-is-a-remote.md">proposal filed</a>) — against this very origin:</p>
   <pre><code>sgit clone --read-key c28b118c9a7a101910efa24a3a49b6cc6dbec8e8dcdc8fea671e89cecb0ab817 ivpijuvg</code></pre>
 
-  <h2>What this deployment demonstrates</h2>
+  <h2>How this site works</h2>
   <table>
     <tr><th>Claim</th><th>Mechanism, visible on this page</th></tr>
     <tr><td>Names are computed, never listed</td><td>The first request was <code>bare/refs/&lt;hmac-of-read-key&gt;</code> — open the vault panel: no listing call appears</td></tr>
-    <tr><td>Reads are plain GETs</td><td>The ciphertext paths are the live API's read paths, served here by GitHub Pages; the repo's CI serves the same tree from a stdlib file server and asserts byte-identity</td></tr>
-    <tr><td>The host cannot read the docs</td><td>This origin stores only <code>obj-cas-imm-*</code> ciphertext; the decryption you just benefited from happened in this tab</td></tr>
+    <tr><td>Reads are plain GETs</td><td>The ciphertext paths are the live API's read paths, served here by GitHub Pages; the repo's CI serves the same tree from a stdlib file server and asserts byte-identity on every push</td></tr>
+    <tr><td>The host cannot read the docs</td><td>This origin stores only <code>obj-cas-imm-*</code> ciphertext; decryption happens in this tab. Updating the docs is <code>sgit push</code> + re-projection — no page edits</td></tr>
     <tr><td>Writes and auth break, by design</td><td>A published vault is a read-only snapshot; the read key is the whole credential and the ciphertext is the protection</td></tr>
     <tr><td>The one real gap is pinned</td><td>Today's <code>sgit clone</code> still needs the batch endpoint — a good-failure test in CI flips when the CLI ships static fan-out</td></tr>
   </table>
 
-  <h2>The audit, honestly</h2>
-  <p>Before publication the working tree and the git index were scanned: the vault key and
-  push token live only in the git-ignored <code>.sg_vault/local/</code> tier (a unit test
-  fails the build if that ever changes); no private-key blocks and no tokens appear in
-  tracked files; the vault's own content was written for publication and contains no
-  credential other than the deliberately published read key above. The vault has not yet
-  been pushed to a production SG/Send server — its named branch was forwarded via a local
-  in-memory instance of the same service, so the git repository and this projection are
-  currently the authoritative copies.</p>
+  <h2>Provenance, honestly</h2>
+  <p>The deployment guides here were <strong>republished on 18 Aug 2026</strong> from the
+  SG/Send team's original deploy vault (<code>fyofmkvr</code>, commit
+  <code>obj-cas-imm-000f0325258c</code>, the one behind
+  <a href="https://sgit.ai/deploy/index.html">sgit.ai/deploy</a>) into this repository's
+  vault, where they are now maintained alongside the code that will deploy — see the
+  maintenance page in the viewer. Until the handover completes, the SG/Send team's vault
+  remains the live source for sgit.ai/deploy. Before publication the tree and git index
+  were scanned: the credential tier is git-ignored and leak-guarded by a unit test; no
+  tokens or private keys appear in tracked files; the only credential here is the read key
+  above, published on purpose. Everything in the repository — apart from the vault key —
+  is public and open source (Apache-2.0).</p>
 
   <h2>Derived facts</h2>
   <p id="facts">derived live once the vault opens…</p>
-
-  <h2>Where everything lives</h2>
-  <table>
-    <tr><th>Artefact</th><th>Location</th></tr>
-    <tr><td>This vault (plaintext working tree + encrypted store)</td><td><a href="https://github.com/SGit-AI/SGit-AI__API/tree/dev/vault">SGit-AI/SGit-AI__API · vault/</a></td></tr>
-    <tr><td>Conformance suite (runs on every push)</td><td><code>tests/unit/vault_conformance/</code></td></tr>
-    <tr><td>Static-clone proposal to the CLI team</td><td><code>team/comms/briefs/08/17/</code></td></tr>
-    <tr><td>Agent index of this static site</td><td><a href="llms.txt">llms.txt</a></td></tr>
-    <tr><td>Write-key status</td><td>escrowed (Dinis Cruz) — the vault can be corrected and republished</td></tr>
-  </table>
 </div>
 
 <script src="reader.js"></script>
@@ -120,17 +140,32 @@
 const VAULT_ID = 'ivpijuvg';
 const READ_KEY = 'c28b118c9a7a101910efa24a3a49b6cc6dbec8e8dcdc8fea671e89cecb0ab817';
 
-/* --- minimal markdown renderer (same rules as the vault app) --- */
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function inline(s){
-  s = esc(s);
-  s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
-  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_,t,h)=> /^https?:\/\//.test(h)
-      ? '<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>' : t);
-  return s;
+/* --- path + markdown helpers (same rules as the vault app) --- */
+function normalizePath(base, href){
+  const parts = (base ? base.split('/').slice(0, -1) : []).concat(href.split('/'));
+  const out = [];
+  for (const part of parts){
+    if (part === '' || part === '.') continue;
+    if (part === '..') out.pop(); else out.push(part);
+  }
+  return out.join('/');
 }
-function renderMd(md){
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function makeInline(currentPath, pathToId){
+  return function inline(s){
+    s = esc(s);
+    s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_,t,h)=>{
+      if (/^https?:\/\//.test(h)) return '<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>';
+      const id = pathToId[normalizePath(currentPath, h)];
+      return id ? '<a class="doclink" data-doc="'+id+'">'+t+'</a>' : t;
+    });
+    return s;
+  };
+}
+function renderMd(md, currentPath, pathToId){
+  const inline = makeInline(currentPath, pathToId);
   const lines = md.split('\n'); const out = []; let i = 0; let para = [];
   const flush = () => { if (para.length){ out.push('<p>'+inline(para.join(' '))+'</p>'); para = []; } };
   while (i < lines.length){
@@ -177,39 +212,44 @@ async function fetchBytes(rel){
 const statusEl = document.getElementById('status');
 const navEl    = document.getElementById('nav');
 const docEl    = document.getElementById('doc');
+let PAGES = [], PATH_TO_ID = {}, VAULT = null;
+
+async function show(id){
+  navEl.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.id === id));
+  const page = PAGES.find(p => p.id === id) || PAGES[0];
+  if (!page) return;
+  docEl.innerHTML = '<p>decrypting '+esc(page.path)+'…</p>';
+  docEl.innerHTML = renderMd(await VAULT.readText(page.path), page.path, PATH_TO_ID);
+  history.replaceState(null, '', '#'+page.id);
+}
+document.addEventListener('click', e => {
+  const link = e.target.closest('a.doclink');
+  if (link){ e.preventDefault(); show(link.dataset.doc); }
+});
 
 (async () => {
   try {
-    const vault = await SgitStaticReader.openVault({ vaultId: VAULT_ID, readKeyHex: READ_KEY, fetchBytes });
-    const content = JSON.parse(await vault.readText('content.json'));
-    const pages = [{ id:'overview', title:'Overview', path:null }]
-      .concat((content.docs||[]).map(d => ({ id:d.id, title:d.title, path:d.path })));
+    VAULT = await SgitStaticReader.openVault({ vaultId: VAULT_ID, readKeyHex: READ_KEY, fetchBytes });
+    const content = JSON.parse(await VAULT.readText('content.json'));
+    PAGES = (content.sections||[]).flatMap(s => s.items);
+    PATH_TO_ID = Object.fromEntries(PAGES.map(p => [p.path, p.id]));
 
-    async function show(id){
-      navEl.querySelectorAll('a').forEach(a => a.classList.toggle('active', a.dataset.id === id));
-      const page = pages.find(p => p.id === id) || pages[0];
-      if (!page.path){
-        docEl.innerHTML = '<h1>'+esc(content.title)+'</h1><p>'+esc(content.tagline)+'</p>'
-          + '<p>Pick a page on the left — each one is decrypted on demand from this host’s ciphertext. '
-          + 'The conformance claims this vault exists to pin are listed in <code>content.json</code> '
-          + 'and rendered by the vault’s own app when opened in a vault host.</p>';
-        return;
-      }
-      docEl.innerHTML = '<p>decrypting '+esc(page.path)+'…</p>';
-      docEl.innerHTML = renderMd(await vault.readText(page.path));
-    }
-    pages.forEach(p => { const a = document.createElement('a');
-      a.textContent = p.title; a.href = '#'+p.id; a.dataset.id = p.id;
-      a.onclick = e => { e.preventDefault(); show(p.id); }; navEl.appendChild(a); });
+    (content.sections||[]).forEach(section => {
+      const h = document.createElement('div'); h.className = 'sec'; h.textContent = section.title; navEl.appendChild(h);
+      section.items.forEach(item => { const a = document.createElement('a');
+        a.textContent = item.title; a.href = '#'+item.id; a.dataset.id = item.id;
+        a.onclick = e => { e.preventDefault(); show(item.id); }; navEl.appendChild(a); });
+    });
 
-    const fileCount = Object.keys(vault.files).length;
-    statusEl.innerHTML = `vault <b>${VAULT_ID}</b> · commit <b>${vault.commitId}</b> · “${esc(vault.message||'')}” · ${fileCount} files · everything decrypted in this tab`;
+    const fileCount = Object.keys(VAULT.files).length;
+    statusEl.innerHTML = `vault <b>${VAULT_ID}</b> · commit <b>${VAULT.commitId}</b> · “${esc(VAULT.message||'')}” · ${fileCount} files · everything decrypted in this tab`;
     document.getElementById('facts').innerHTML =
       `Derived live from the published read key by this page, no token and no server: `
-      + `<strong>${fileCount} files</strong> at HEAD · commit <code>${vault.commitId}</code> · `
-      + `ref <code>${vault.refId}</code> · ${fetched} objects fetched (${fetchedBytes.toLocaleString()} bytes of ciphertext) · `
+      + `<strong>${fileCount} files</strong> at HEAD · commit <code>${VAULT.commitId}</code> · `
+      + `ref <code>${VAULT.refId}</code> · ${fetched} objects fetched (${fetchedBytes.toLocaleString()} bytes of ciphertext) · `
       + `entry point <code>index.html</code> (a self-contained docs app, auto-opened in vault hosts).`;
-    show(location.hash ? location.hash.slice(1) : 'overview');
+    const want = location.hash ? location.hash.slice(1) : 'start-here';
+    show(PATH_TO_ID['00-START-HERE.md'] && !PAGES.find(p=>p.id===want) ? 'start-here' : want);
   } catch (error) {
     statusEl.textContent = 'could not open the vault: ' + error.message;
     docEl.innerHTML = '<p>This page needs its ciphertext at <code>api/vault/read/'+VAULT_ID+'/bare/…</code> on the same origin '

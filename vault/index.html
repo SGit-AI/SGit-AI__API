@@ -3,73 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SGit API — Docs Vault</title>
+<title>deploy.sgit.ai — deploy sgit's server side</title>
 <style>
-  /* All CSS inlined — the vault authoring contract forbids <link href> against vault paths. */
-  :root{ --paper:#0d1117; --panel:#151b24; --line:#232c3a; --ink:#dbe4ee; --dim:#8794a5;
-         --accent:#5fb4a2; --warn:#d8b26a; --ok:#5fb4a2; --design:#7d9dd1; }
+  /* All CSS inlined — the vault authoring contract forbids <link href> against vault paths.
+     Palette mirrors sgit.ai's shared stylesheet (light theme). */
+  :root{ --bg:#faf9f5; --panel:#ffffff; --panel2:#f2f0e9; --line:#e5e1d5; --line2:#d5d0c2;
+         --fg:#1c1d21; --dim:#5c5f66; --dim2:#8a8d94;
+         --accent:#0f766e; --accent-dk:#115e59; --yellow:#a16207; --warm:#b45309; }
   *{ box-sizing:border-box }
-  body{ margin:0; background:var(--paper); color:var(--ink); line-height:1.6;
+  body{ margin:0; background:var(--bg); color:var(--fg); line-height:1.6;
         font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-  .layout{ display:flex; min-height:100vh }
-  nav{ width:230px; flex-shrink:0; border-right:1px solid var(--line); padding:1.6rem 0 2rem }
-  nav .brand{ padding:0 1.2rem 1rem; border-bottom:1px solid var(--line); margin-bottom:.8rem }
-  nav .brand b{ font-size:1.02rem; letter-spacing:.01em }
-  nav .brand span{ display:block; color:var(--dim); font-size:.72rem; margin-top:.15rem }
-  nav a{ display:block; padding:.42rem 1.2rem; color:var(--dim); text-decoration:none;
-         font-size:.88rem; border-left:2px solid transparent }
-  nav a:hover{ color:var(--ink) }
-  nav a.active{ color:var(--accent); border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 6%, transparent) }
-  .content{ flex:1; min-width:0; padding:2.4rem clamp(1.2rem,4vw,3rem) 3.5rem; max-width:860px }
-  .src{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.68rem; color:var(--dim);
-        letter-spacing:.04em; margin:0 0 1.4rem }
+  .topbar{ display:flex; align-items:center; gap:.8rem; padding:.7rem 1.2rem;
+           border-bottom:1px solid var(--line); background:var(--panel) }
+  .brand{ font-weight:800; font-size:1.05rem; color:var(--fg); letter-spacing:-.02em;
+          white-space:nowrap; text-decoration:none }
+  .brand span{ color:var(--accent) }
+  .topbar .home{ margin-left:auto; font-size:.8rem; color:var(--dim); text-decoration:none }
+  .topbar .home:hover{ color:var(--accent) }
+  .layout{ display:flex; min-height:calc(100vh - 49px) }
+  nav.side{ width:240px; flex-shrink:0; border-right:1px solid var(--line); padding:1rem 0 2rem;
+            background:var(--panel) }
+  nav.side .sec{ padding:.9rem 1.2rem .25rem; font-size:.68rem; letter-spacing:.08em;
+                 text-transform:uppercase; color:var(--dim2); font-weight:600 }
+  nav.side a{ display:block; padding:.32rem 1.2rem; color:var(--dim); text-decoration:none;
+              font-size:.87rem; border-left:2px solid transparent }
+  nav.side a:hover{ color:var(--fg) }
+  nav.side a.active{ color:var(--accent-dk); border-left-color:var(--accent);
+                     background:color-mix(in srgb, var(--accent) 7%, transparent); font-weight:600 }
+  .content{ flex:1; min-width:0; padding:2rem clamp(1.2rem,4vw,3rem) 3.5rem; max-width:880px }
+  .src{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.68rem; color:var(--dim2);
+        letter-spacing:.04em; margin:0 0 1.3rem }
   .src b{ color:var(--accent); font-weight:600 }
-  h1{ font-size:clamp(1.5rem,4vw,2.1rem); font-weight:650; margin:.2rem 0 1rem }
-  h2{ font-size:1.15rem; font-weight:600; margin:1.8rem 0 .5rem }
-  h3{ font-size:.98rem; font-weight:600; margin:1.4rem 0 .4rem }
+  h1{ font-size:clamp(1.5rem,4vw,2.05rem); font-weight:700; margin:.2rem 0 .9rem; letter-spacing:-.01em }
+  h2{ font-size:1.15rem; font-weight:650; margin:1.8rem 0 .5rem }
+  h3{ font-size:.98rem; font-weight:650; margin:1.4rem 0 .4rem }
   p, li{ color:var(--dim); font-size:.92rem }
-  strong{ color:var(--ink) } a{ color:var(--accent) }
-  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel);
+  strong{ color:var(--fg) } a{ color:var(--accent) }
+  a.doclink{ cursor:pointer; text-decoration:underline; text-underline-offset:2px }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel2);
         border:1px solid var(--line); border-radius:6px; padding:.08rem .35rem; overflow-wrap:anywhere }
   pre{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem;
        overflow-x:auto; font-size:.78rem; line-height:1.5 }
   pre code{ background:none; border:none; padding:0 }
-  table{ border-collapse:collapse; width:100%; margin:.8rem 0; font-size:.85rem }
-  th,td{ border:1px solid var(--line); padding:.45rem .65rem; text-align:left; color:var(--dim) }
-  th{ color:var(--ink); background:var(--panel) }
+  table{ border-collapse:collapse; width:100%; margin:.8rem 0; font-size:.86rem }
+  th,td{ border:1px solid var(--line); padding:.45rem .65rem; text-align:left; color:var(--dim); vertical-align:top }
+  th{ color:var(--fg); background:var(--panel2) }
   .grid{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); margin-top:1.4rem }
   article{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:1.05rem 1.15rem }
   .badge{ display:inline-block; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.64rem;
           letter-spacing:.06em; text-transform:uppercase; padding:.14rem .5rem; border-radius:999px;
           border:1px solid var(--line); margin-bottom:.5rem }
-  .holds{ color:var(--ok) } .known-gap{ color:var(--warn) } .by-design{ color:var(--design) }
+  .holds{ color:var(--accent-dk) } .known-gap{ color:var(--yellow) } .by-design{ color:var(--warm) }
   article h2{ margin:0 0 .3rem; font-size:1rem } article p{ margin:0; font-size:.84rem }
-  footer{ color:var(--dim); font-size:.74rem; margin-top:2.6rem; border-top:1px solid var(--line); padding-top:1rem }
-  footer b{ color:var(--ink) }
-  @media (max-width:720px){ .layout{ flex-direction:column } nav{ width:auto; border-right:none; border-bottom:1px solid var(--line); padding-bottom:.6rem } }
+  footer{ color:var(--dim2); font-size:.74rem; margin-top:2.6rem; border-top:1px solid var(--line); padding-top:1rem }
+  footer b{ color:var(--fg) }
+  @media (max-width:760px){ .layout{ flex-direction:column } nav.side{ width:auto; border-right:none; border-bottom:1px solid var(--line) } }
 </style>
 </head>
 <body>
+<div class="topbar">
+  <a class="brand" href="#start-here">deploy<span>.sgit.ai</span></a>
+  <a class="home" href="https://sgit.ai" target="_blank" rel="noopener">sgit.ai →</a>
+</div>
 <div class="layout">
-  <nav id="nav">
-    <div class="brand"><b>SGit API</b><span>docs, from an encrypted vault</span></div>
-  </nav>
+  <nav class="side" id="nav"></nav>
   <div class="content">
     <p class="src" id="hSrc">content: <b>inlined fallback</b></p>
     <div id="page"></div>
-    <footer>🔒 Everything on this page came out of an encrypted <b>SG/Send vault</b> — the reference
-    vault of the <b>SGit API</b> repository. Whichever host served these bytes (the live API, GitHub
-    Pages, or a git checkout) held only ciphertext under opaque ids; the decryption happened here,
-    with a deliberately published <b>read-only key</b>. The write key never enters the repository.</footer>
+    <footer>🔒 Everything on this page came out of an encrypted <b>SG/Send vault</b> — the deployment
+    documentation of <b>sgit</b>, maintained in the <b>SGit API</b> repository. Whichever host served
+    these bytes (the live API, GitHub Pages, or a git checkout) held only ciphertext under opaque ids;
+    the decryption happened here, with a deliberately published <b>read-only key</b>. The write key
+    never enters the repository.</footer>
   </div>
 </div>
 
 <script>
 'use strict';
 const FALLBACK_CONTENT = {
-  "title": "SGit API — Reference Vault",
-  "tagline": "The documentation of the SGit API, served from inside an encrypted vault. (Bridge unavailable — showing the inlined snapshot of the home page; the docs pages need the vault.)",
-  "docs": [],
+  "title": "deploy.sgit.ai",
+  "tagline": "How (and where) to deploy sgit's server side. (Bridge unavailable — showing the inlined snapshot of the overview; the docs pages need the vault.)",
+  "sections": [],
   "claims": [
     {"id":"computed-names","title":"Names are computed, never listed","status":"holds","note":"Every object this page needed — ref, index, commit, tree, blob — has a name derived from the read key or a content hash. No listing or discovery call exists to depend on."},
     {"id":"static-get","title":"Reads are plain GETs","status":"holds","note":"The read path is a sequence of GETs of deterministic paths. A static file host serves them unchanged; the live API and GitHub Pages are interchangeable for reading."},
@@ -80,50 +94,63 @@ const FALLBACK_CONTENT = {
   ]
 };
 
-/* --- minimal markdown renderer (headings, lists, tables, code, links, emphasis) --- */
-function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function inline(s){
-  s = esc(s);
-  s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
-  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
-  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_,t,h)=>{
-    const safe = /^https?:\/\//.test(h);
-    return safe ? '<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>' : t;   // vault-internal links stay text
-  });
-  return s;
+/* --- path helpers: resolve relative .md links to nav pages --- */
+function normalizePath(base, href){
+  const parts = (base ? base.split('/').slice(0, -1) : []).concat(href.split('/'));
+  const out = [];
+  for (const part of parts){
+    if (part === '' || part === '.') continue;
+    if (part === '..') out.pop(); else out.push(part);
+  }
+  return out.join('/');
 }
-function renderMd(md){
-  const lines = md.split('\n'); const out = []; let i = 0;
-  const flushPara = buf => { if (buf.length) { out.push('<p>'+inline(buf.join(' '))+'</p>'); buf.length = 0; } };
-  let para = [];
+
+/* --- minimal markdown renderer --- */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function makeInline(currentPath, pathToId){
+  return function inline(s){
+    s = esc(s);
+    s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
+    s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_,t,h)=>{
+      if (/^https?:\/\//.test(h)) return '<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>';
+      const id = pathToId[normalizePath(currentPath, h)];
+      return id ? '<a class="doclink" data-doc="'+id+'">'+t+'</a>' : t;
+    });
+    return s;
+  };
+}
+function renderMd(md, currentPath, pathToId){
+  const inline = makeInline(currentPath, pathToId);
+  const lines = md.split('\n'); const out = []; let i = 0; let para = [];
+  const flush = () => { if (para.length){ out.push('<p>'+inline(para.join(' '))+'</p>'); para = []; } };
   while (i < lines.length){
     const line = lines[i];
-    if (/^```/.test(line)){ flushPara(para); const code=[]; i++;
+    if (/^```/.test(line)){ flush(); const code=[]; i++;
       while (i < lines.length && !/^```/.test(lines[i])) code.push(lines[i++]);
       i++; out.push('<pre><code>'+esc(code.join('\n'))+'</code></pre>'); continue; }
-    if (/^#{1,3} /.test(line)){ flushPara(para); const level = line.match(/^#+/)[0].length;
-      out.push('<h'+level+'>'+inline(line.replace(/^#+ /,''))+'</h'+level+'>'); i++; continue; }
-    if (/^\|/.test(line)){ flushPara(para); const rows=[];
+    if (/^#{1,3} /.test(line)){ flush(); const l = line.match(/^#+/)[0].length;
+      out.push('<h'+l+'>'+inline(line.replace(/^#+ /,''))+'</h'+l+'>'); i++; continue; }
+    if (/^\|/.test(line)){ flush(); const rows=[];
       while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
       const cells = r => r.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
-      let html = '<table><tr>' + cells(rows[0]).map(c=>'<th>'+inline(c)+'</th>').join('') + '</tr>';
-      for (let r = 2; r < rows.length; r++)
-        html += '<tr>' + cells(rows[r]).map(c=>'<td>'+inline(c)+'</td>').join('') + '</tr>';
-      out.push(html + '</table>'); continue; }
-    if (/^[-*] /.test(line)){ flushPara(para); const items=[];
+      let html = '<table><tr>'+cells(rows[0]).map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr>';
+      for (let r = 2; r < rows.length; r++) html += '<tr>'+cells(rows[r]).map(c=>'<td>'+inline(c)+'</td>').join('')+'</tr>';
+      out.push(html+'</table>'); continue; }
+    if (/^[-*] /.test(line)){ flush(); const items=[];
       while (i < lines.length && /^[-*] /.test(lines[i])) items.push(lines[i++].replace(/^[-*] /,''));
-      out.push('<ul>' + items.map(x=>'<li>'+inline(x)+'</li>').join('') + '</ul>'); continue; }
-    if (/^\d+\. /.test(line)){ flushPara(para); const items=[];
+      out.push('<ul>'+items.map(x=>'<li>'+inline(x)+'</li>').join('')+'</ul>'); continue; }
+    if (/^\d+\. /.test(line)){ flush(); const items=[];
       while (i < lines.length && /^\d+\. /.test(lines[i])) items.push(lines[i++].replace(/^\d+\. /,''));
-      out.push('<ol>' + items.map(x=>'<li>'+inline(x)+'</li>').join('') + '</ol>'); continue; }
-    if (/^\s*$/.test(line)){ flushPara(para); i++; continue; }
+      out.push('<ol>'+items.map(x=>'<li>'+inline(x)+'</li>').join('')+'</ol>'); continue; }
+    if (/^\s*$/.test(line)){ flush(); i++; continue; }
     para.push(line.trim()); i++;
   }
-  flushPara(para);
+  flush();
   return out.join('\n');
 }
 
-/* --- data access over the sg.vfs bridge, with fallbacks --- */
+/* --- data access over the sg.vfs bridge --- */
 async function readText(path){
   if (window.sg && window.sg.vfs && window.sg.vfs.readText){
     try { return await window.sg.vfs.readText(path); } catch(e){ return null; }
@@ -137,7 +164,8 @@ async function getContent(){
 }
 
 /* --- views --- */
-function homeView(data){
+let CONTENT = null, PAGES = [], PATH_TO_ID = {};
+function overviewView(data){
   const cards = data.claims.map(claim => {
     const cls = String(claim.status||'').replace(/\s+/g,'-');
     return '<article><span class="badge '+cls+'">'+esc(claim.status)+'</span>'
@@ -145,27 +173,30 @@ function homeView(data){
   }).join('');
   return '<h1>'+esc(data.title)+'</h1><p>'+esc(data.tagline)+'</p><div class="grid">'+cards+'</div>';
 }
-
-let CONTENT = null;
 async function show(id){
   const page = document.getElementById('page');
   document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === id));
-  if (id === 'home'){ page.innerHTML = homeView(CONTENT.data); return; }
-  const doc = (CONTENT.data.docs||[]).find(d => d.id === id);
-  if (!doc){ page.innerHTML = homeView(CONTENT.data); return; }
+  const doc = PAGES.find(p => p.id === id);
+  if (!doc){ page.innerHTML = overviewView(CONTENT.data); return; }
   const md = await readText(doc.path);
-  page.innerHTML = md ? renderMd(md)
+  page.innerHTML = md ? renderMd(md, doc.path, PATH_TO_ID)
                       : '<h1>'+esc(doc.title)+'</h1><p>This page lives in the vault (<code>'+esc(doc.path)+'</code>) and needs the sg.vfs bridge to load. Open the vault in a host that provides it, or read the same file from the repository.</p>';
 }
-
 function buildNav(){
   const nav = document.getElementById('nav');
   const mk = (id, title) => { const a = document.createElement('a');
     a.textContent = title; a.href = '#'+id; a.dataset.id = id;
     a.onclick = e => { e.preventDefault(); show(id); }; nav.appendChild(a); };
-  mk('home', 'Overview');
-  (CONTENT.data.docs||[]).forEach(d => mk(d.id, d.title));
+  mk('overview', 'Overview');
+  (CONTENT.data.sections||[]).forEach(section => {
+    const h = document.createElement('div'); h.className = 'sec'; h.textContent = section.title; nav.appendChild(h);
+    section.items.forEach(item => mk(item.id, item.title));
+  });
 }
+document.addEventListener('click', e => {
+  const link = e.target.closest('a.doclink');
+  if (link){ e.preventDefault(); show(link.dataset.doc); }
+});
 
 (function boot(){
   let tries = 0;
@@ -173,9 +204,11 @@ function buildNav(){
     if ((window.sg && window.sg.vfs) || tries++ > 25){
       getContent().then(content => {
         CONTENT = content;
+        PAGES = (content.data.sections||[]).flatMap(s => s.items);
+        PATH_TO_ID = Object.fromEntries(PAGES.map(p => [p.path, p.id]));
         document.getElementById('hSrc').innerHTML = 'content: <b>' + content.src + '</b>';
         buildNav();
-        show('home');
+        show(location.hash ? location.hash.slice(1) : 'start-here');
         try { window.parent && window.parent.postMessage({ type:'sg-app-ready' }, '*'); } catch(e){}
       });
     } else setTimeout(wait, 60);
