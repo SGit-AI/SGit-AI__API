@@ -1,6 +1,6 @@
 [tool.poetry]
 name        = "sgit_ai_api"
-version     = "v0.1.4"
+version     = "v0.1.5"
 description = "SGit-AI__API"
 authors     = ["Dinis Cruz <dinis.cruz@owasp.org>"]
 license     = "Apache 2.0"
