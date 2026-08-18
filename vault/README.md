@@ -9,13 +9,21 @@ is a GET of a path computed from a key, and decryption happens in the client. A 
 static host (GitHub Pages) is the strongest available proof of that claim — anything that
 stops working there is a hidden dependency on server behaviour.
 
+Since 17 Aug it is also the **documentation vault of the SGit API**: the docs are written
+here, served from ciphertext, and rendered wherever the vault lands — the official vault
+UI, the GitHub Pages projection, or a git checkout.
+
 ## What this vault contains
 
 | File | Purpose |
 |---|---|
 | `README.md` | This document |
-| `content.json` | The conformance claims, read by the app over the `sg.vfs` bridge at runtime |
-| `index.html` | A self-contained vault app that renders the claims (CSS/JS inlined per the authoring contract) |
+| `content.json` | The conformance claims + docs navigation, read by the app over the `sg.vfs` bridge |
+| `docs/what-is-the-sgit-api.md` | What the API is, what the server can/cannot see, where the code lives |
+| `docs/read-contract.md` | The GET walk, the client-side derivations, the cache semantics |
+| `docs/static-hosting.md` | This deployment: the conformance framing and the three things that break |
+| `docs/roadmap.md` | Done / next, in order, toward the sgit.ai/deploy objective |
+| `index.html` | A self-contained docs app: nav + markdown rendering, CSS/JS inlined per the authoring contract |
 | `app.json` | App manifest — `index.html` auto-opens when the vault is opened |
 
 ## How it is published

@@ -25,11 +25,13 @@ here must be labelled "PROPOSED — does not exist yet."
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
 | Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests; real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
 
-### Reference vault (static-deployment conformance target)
+### Reference vault (static-deployment conformance target + SGit API docs vault)
 
 | Item | Location / value | Notes |
 |---|---|---|
-| Vault working tree | `vault/` (README, `content.json`, `index.html`, `app.json`) | Plaintext — committed deliberately (published vault) |
+| Vault working tree | `vault/` (README, `content.json`, `docs/*.md` × 4, `index.html` docs app, `app.json`) | Plaintext — committed deliberately (published vault); since 17 Aug also the API's documentation |
+| Static site source | `pages/` (`index.html`, `reader.js`, `llms.txt`) | The GitHub Pages shell: publishing page + in-browser vault reader (WebCrypto/Node, mirrors `Vault__Crypto`) — no pytest coverage, verified manually in Node |
+| Live projection | https://sgit-ai.github.io/SGit-AI__API/ | Docs decrypted and rendered in-browser from this same origin |
 | Encrypted object store | `vault/.sg_vault/bare/` | Ciphertext mirror, committed (side-by-side pattern) |
 | Credential tier | `vault/.sg_vault/local/` | **git-ignored — never committed**; write key escrowed out-of-band |
 | Vault ID | `ivpijuvg` | |

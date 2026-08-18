@@ -1,6 +1,12 @@
 {
   "title": "SGit API — Reference Vault",
-  "tagline": "A conformance target: if you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
+  "tagline": "The documentation of the SGit API, served from inside an encrypted vault. If you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
+  "docs": [
+    {"id": "what-is-the-sgit-api", "path": "docs/what-is-the-sgit-api.md", "title": "What is the SGit API"},
+    {"id": "read-contract",        "path": "docs/read-contract.md",        "title": "The read contract"},
+    {"id": "static-hosting",       "path": "docs/static-hosting.md",       "title": "Static hosting — this deployment"},
+    {"id": "roadmap",              "path": "docs/roadmap.md",              "title": "Roadmap"}
+  ],
   "claims": [
     {
       "id": "computed-names",

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>SGit API — Reference Vault</title>
+<title>SGit API — Docs Vault</title>
 <style>
   /* All CSS inlined — the vault authoring contract forbids <link href> against vault paths. */
   :root{ --paper:#0d1117; --panel:#151b24; --line:#232c3a; --ink:#dbe4ee; --dim:#8794a5;
@@ -11,50 +11,65 @@
   *{ box-sizing:border-box }
   body{ margin:0; background:var(--paper); color:var(--ink); line-height:1.6;
         font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif; }
-  header{ padding:3rem 1.5rem 1.6rem; text-align:center; max-width:820px; margin:0 auto }
-  .rule{ width:54px; height:2px; background:var(--accent); margin:0 auto 1.2rem }
-  h1{ margin:0 0 .7rem; font-size:clamp(1.7rem,4.6vw,2.4rem); font-weight:650; letter-spacing:.01em }
-  .tag{ color:var(--dim); font-size:.97rem; margin:0 auto; max-width:62ch }
+  .layout{ display:flex; min-height:100vh }
+  nav{ width:230px; flex-shrink:0; border-right:1px solid var(--line); padding:1.6rem 0 2rem }
+  nav .brand{ padding:0 1.2rem 1rem; border-bottom:1px solid var(--line); margin-bottom:.8rem }
+  nav .brand b{ font-size:1.02rem; letter-spacing:.01em }
+  nav .brand span{ display:block; color:var(--dim); font-size:.72rem; margin-top:.15rem }
+  nav a{ display:block; padding:.42rem 1.2rem; color:var(--dim); text-decoration:none;
+         font-size:.88rem; border-left:2px solid transparent }
+  nav a:hover{ color:var(--ink) }
+  nav a.active{ color:var(--accent); border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 6%, transparent) }
+  .content{ flex:1; min-width:0; padding:2.4rem clamp(1.2rem,4vw,3rem) 3.5rem; max-width:860px }
   .src{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.68rem; color:var(--dim);
-        text-align:center; margin:.9rem 0 0; letter-spacing:.04em }
+        letter-spacing:.04em; margin:0 0 1.4rem }
   .src b{ color:var(--accent); font-weight:600 }
-  main{ max-width:1000px; margin:1.3rem auto 3rem; padding:0 1.2rem;
-        display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(290px,1fr)) }
-  article{ background:var(--panel); border:1px solid var(--line); border-radius:12px;
-           padding:1.05rem 1.15rem 1.15rem; opacity:0; transform:translateY(8px);
-           transition:opacity .5s ease, transform .5s ease }
-  article.in{ opacity:1; transform:none }
-  .badge{ display:inline-block; font-family:ui-monospace,Menlo,Consolas,monospace;
-          font-size:.66rem; letter-spacing:.06em; text-transform:uppercase; padding:.14rem .5rem;
-          border-radius:999px; border:1px solid var(--line); margin-bottom:.55rem }
-  .holds     { color:var(--ok);     border-color:color-mix(in srgb, var(--ok)     35%, transparent) }
-  .known-gap { color:var(--warn);   border-color:color-mix(in srgb, var(--warn)   35%, transparent) }
-  .by-design { color:var(--design); border-color:color-mix(in srgb, var(--design) 35%, transparent) }
-  article h2{ margin:0 0 .35rem; font-size:1.02rem; font-weight:600 }
-  article p{ margin:0; color:var(--dim); font-size:.86rem; line-height:1.55 }
-  footer{ text-align:center; color:var(--dim); font-size:.75rem; padding:0 1.5rem 2.6rem;
-          max-width:660px; margin:0 auto }
+  h1{ font-size:clamp(1.5rem,4vw,2.1rem); font-weight:650; margin:.2rem 0 1rem }
+  h2{ font-size:1.15rem; font-weight:600; margin:1.8rem 0 .5rem }
+  h3{ font-size:.98rem; font-weight:600; margin:1.4rem 0 .4rem }
+  p, li{ color:var(--dim); font-size:.92rem }
+  strong{ color:var(--ink) } a{ color:var(--accent) }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel);
+        border:1px solid var(--line); border-radius:6px; padding:.08rem .35rem; overflow-wrap:anywhere }
+  pre{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.9rem 1rem;
+       overflow-x:auto; font-size:.78rem; line-height:1.5 }
+  pre code{ background:none; border:none; padding:0 }
+  table{ border-collapse:collapse; width:100%; margin:.8rem 0; font-size:.85rem }
+  th,td{ border:1px solid var(--line); padding:.45rem .65rem; text-align:left; color:var(--dim) }
+  th{ color:var(--ink); background:var(--panel) }
+  .grid{ display:grid; gap:1rem; grid-template-columns:repeat(auto-fit,minmax(270px,1fr)); margin-top:1.4rem }
+  article{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:1.05rem 1.15rem }
+  .badge{ display:inline-block; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.64rem;
+          letter-spacing:.06em; text-transform:uppercase; padding:.14rem .5rem; border-radius:999px;
+          border:1px solid var(--line); margin-bottom:.5rem }
+  .holds{ color:var(--ok) } .known-gap{ color:var(--warn) } .by-design{ color:var(--design) }
+  article h2{ margin:0 0 .3rem; font-size:1rem } article p{ margin:0; font-size:.84rem }
+  footer{ color:var(--dim); font-size:.74rem; margin-top:2.6rem; border-top:1px solid var(--line); padding-top:1rem }
   footer b{ color:var(--ink) }
+  @media (max-width:720px){ .layout{ flex-direction:column } nav{ width:auto; border-right:none; border-bottom:1px solid var(--line); padding-bottom:.6rem } }
 </style>
 </head>
 <body>
-  <header>
-    <div class="rule"></div>
-    <h1 id="hTitle"></h1>
-    <p class="tag" id="hTag"></p>
+<div class="layout">
+  <nav id="nav">
+    <div class="brand"><b>SGit API</b><span>docs, from an encrypted vault</span></div>
+  </nav>
+  <div class="content">
     <p class="src" id="hSrc">content: <b>inlined fallback</b></p>
-  </header>
-  <main id="grid"></main>
-  <footer>🔒 This page is an app inside an encrypted <b>SG/Send vault</b> — the reference vault of the
-    <b>SGit API</b> repository. Wherever these bytes came from — the live API, GitHub Pages, or a git
-    clone — the host held only ciphertext under opaque ids; what you are reading was decrypted here,
+    <div id="page"></div>
+    <footer>🔒 Everything on this page came out of an encrypted <b>SG/Send vault</b> — the reference
+    vault of the <b>SGit API</b> repository. Whichever host served these bytes (the live API, GitHub
+    Pages, or a git checkout) held only ciphertext under opaque ids; the decryption happened here,
     with a deliberately published <b>read-only key</b>. The write key never enters the repository.</footer>
+  </div>
+</div>
 
 <script>
 'use strict';
-const FALLBACK = {
+const FALLBACK_CONTENT = {
   "title": "SGit API — Reference Vault",
-  "tagline": "A conformance target: if you can read this, every byte you needed was a plain GET of a computed path, decrypted where you are. The host that served it cannot read it.",
+  "tagline": "The documentation of the SGit API, served from inside an encrypted vault. (Bridge unavailable — showing the inlined snapshot of the home page; the docs pages need the vault.)",
+  "docs": [],
   "claims": [
     {"id":"computed-names","title":"Names are computed, never listed","status":"holds","note":"Every object this page needed — ref, index, commit, tree, blob — has a name derived from the read key or a content hash. No listing or discovery call exists to depend on."},
     {"id":"static-get","title":"Reads are plain GETs","status":"holds","note":"The read path is a sequence of GETs of deterministic paths. A static file host serves them unchanged; the live API and GitHub Pages are interchangeable for reading."},
@@ -65,47 +80,105 @@ const FALLBACK = {
   ]
 };
 
-async function getData(){
-  try {
-    if (window.sg && window.sg.vfs && window.sg.vfs.readText) {
-      const t = await window.sg.vfs.readText('content.json');
-      if (t) { const j = JSON.parse(t); if (j && j.claims) return { data: j, src: 'sg.vfs.readText("content.json") — live from the vault' }; }
-    }
-  } catch (e) {}
-  return { data: FALLBACK, src: 'inlined fallback' };
-}
-
-function build({ data, src }){
-  document.getElementById('hTitle').textContent = data.title || 'SGit API — Reference Vault';
-  document.getElementById('hTag').textContent   = data.tagline || '';
-  document.getElementById('hSrc').innerHTML     = 'content: <b>' + src + '</b>';
-  const grid = document.getElementById('grid');
-  data.claims.forEach((claim) => {
-    const cls = String(claim.status || '').replace(/\s+/g, '-');
-    const art = document.createElement('article');
-    art.innerHTML = '<span class="badge"></span><h2></h2><p></p>';
-    const badge = art.querySelector('.badge');
-    badge.textContent = claim.status;
-    badge.classList.add(cls);
-    art.querySelector('h2').textContent = claim.title;
-    art.querySelector('p').textContent  = claim.note;
-    grid.appendChild(art);
+/* --- minimal markdown renderer (headings, lists, tables, code, links, emphasis) --- */
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function inline(s){
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (_,t,h)=>{
+    const safe = /^https?:\/\//.test(h);
+    return safe ? '<a href="'+h+'" target="_blank" rel="noopener">'+t+'</a>' : t;   // vault-internal links stay text
   });
-  const cards = document.querySelectorAll('article');
-  if ('IntersectionObserver' in window){
-    const io = new IntersectionObserver((es,o)=>es.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('in'); o.unobserve(e.target);} }), {threshold:.06});
-    cards.forEach(c=>io.observe(c));
-    setTimeout(()=>cards.forEach(c=>c.classList.add('in')), 900);   // belt and braces in embeds
-  } else cards.forEach(c=>c.classList.add('in'));
-  try { window.parent && window.parent.postMessage({ type:'sg-app-ready' }, '*'); } catch(e){}
+  return s;
+}
+function renderMd(md){
+  const lines = md.split('\n'); const out = []; let i = 0;
+  const flushPara = buf => { if (buf.length) { out.push('<p>'+inline(buf.join(' '))+'</p>'); buf.length = 0; } };
+  let para = [];
+  while (i < lines.length){
+    const line = lines[i];
+    if (/^```/.test(line)){ flushPara(para); const code=[]; i++;
+      while (i < lines.length && !/^```/.test(lines[i])) code.push(lines[i++]);
+      i++; out.push('<pre><code>'+esc(code.join('\n'))+'</code></pre>'); continue; }
+    if (/^#{1,3} /.test(line)){ flushPara(para); const level = line.match(/^#+/)[0].length;
+      out.push('<h'+level+'>'+inline(line.replace(/^#+ /,''))+'</h'+level+'>'); i++; continue; }
+    if (/^\|/.test(line)){ flushPara(para); const rows=[];
+      while (i < lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells = r => r.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      let html = '<table><tr>' + cells(rows[0]).map(c=>'<th>'+inline(c)+'</th>').join('') + '</tr>';
+      for (let r = 2; r < rows.length; r++)
+        html += '<tr>' + cells(rows[r]).map(c=>'<td>'+inline(c)+'</td>').join('') + '</tr>';
+      out.push(html + '</table>'); continue; }
+    if (/^[-*] /.test(line)){ flushPara(para); const items=[];
+      while (i < lines.length && /^[-*] /.test(lines[i])) items.push(lines[i++].replace(/^[-*] /,''));
+      out.push('<ul>' + items.map(x=>'<li>'+inline(x)+'</li>').join('') + '</ul>'); continue; }
+    if (/^\d+\. /.test(line)){ flushPara(para); const items=[];
+      while (i < lines.length && /^\d+\. /.test(lines[i])) items.push(lines[i++].replace(/^\d+\. /,''));
+      out.push('<ol>' + items.map(x=>'<li>'+inline(x)+'</li>').join('') + '</ol>'); continue; }
+    if (/^\s*$/.test(line)){ flushPara(para); i++; continue; }
+    para.push(line.trim()); i++;
+  }
+  flushPara(para);
+  return out.join('\n');
 }
 
-/* Give a late-installing bridge a moment before falling back. */
+/* --- data access over the sg.vfs bridge, with fallbacks --- */
+async function readText(path){
+  if (window.sg && window.sg.vfs && window.sg.vfs.readText){
+    try { return await window.sg.vfs.readText(path); } catch(e){ return null; }
+  }
+  return null;
+}
+async function getContent(){
+  const t = await readText('content.json');
+  if (t){ try { const j = JSON.parse(t); if (j && j.claims) return { data:j, src:'sg.vfs.readText("content.json") — live from the vault' }; } catch(e){} }
+  return { data: FALLBACK_CONTENT, src: 'inlined fallback' };
+}
+
+/* --- views --- */
+function homeView(data){
+  const cards = data.claims.map(claim => {
+    const cls = String(claim.status||'').replace(/\s+/g,'-');
+    return '<article><span class="badge '+cls+'">'+esc(claim.status)+'</span>'
+         + '<h2>'+esc(claim.title)+'</h2><p>'+esc(claim.note)+'</p></article>';
+  }).join('');
+  return '<h1>'+esc(data.title)+'</h1><p>'+esc(data.tagline)+'</p><div class="grid">'+cards+'</div>';
+}
+
+let CONTENT = null;
+async function show(id){
+  const page = document.getElementById('page');
+  document.querySelectorAll('#nav a').forEach(a => a.classList.toggle('active', a.dataset.id === id));
+  if (id === 'home'){ page.innerHTML = homeView(CONTENT.data); return; }
+  const doc = (CONTENT.data.docs||[]).find(d => d.id === id);
+  if (!doc){ page.innerHTML = homeView(CONTENT.data); return; }
+  const md = await readText(doc.path);
+  page.innerHTML = md ? renderMd(md)
+                      : '<h1>'+esc(doc.title)+'</h1><p>This page lives in the vault (<code>'+esc(doc.path)+'</code>) and needs the sg.vfs bridge to load. Open the vault in a host that provides it, or read the same file from the repository.</p>';
+}
+
+function buildNav(){
+  const nav = document.getElementById('nav');
+  const mk = (id, title) => { const a = document.createElement('a');
+    a.textContent = title; a.href = '#'+id; a.dataset.id = id;
+    a.onclick = e => { e.preventDefault(); show(id); }; nav.appendChild(a); };
+  mk('home', 'Overview');
+  (CONTENT.data.docs||[]).forEach(d => mk(d.id, d.title));
+}
+
 (function boot(){
   let tries = 0;
   (function wait(){
-    if ((window.sg && window.sg.vfs) || tries++ > 25) getData().then(build);
-    else setTimeout(wait, 60);
+    if ((window.sg && window.sg.vfs) || tries++ > 25){
+      getContent().then(content => {
+        CONTENT = content;
+        document.getElementById('hSrc').innerHTML = 'content: <b>' + content.src + '</b>';
+        buildNav();
+        show('home');
+        try { window.parent && window.parent.postMessage({ type:'sg-app-ready' }, '*'); } catch(e){}
+      });
+    } else setTimeout(wait, 60);
   })();
 })();
 </script>
