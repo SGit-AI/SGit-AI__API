@@ -46,40 +46,8 @@ jobs:
         run: |
           mkdir -p "_site/api/vault/read/${VAULT_ID}"
           cp -r vault/.sg_vault/bare "_site/api/vault/read/${VAULT_ID}/bare"
+          cp pages/* _site/
           touch _site/.nojekyll
-          cat > _site/index.html <<EOF
-          <!doctype html>
-          <html lang="en"><head><meta charset="utf-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1">
-          <title>SGit API — Reference Vault (static host)</title>
-          <style>
-            body{margin:0;background:#0d1117;color:#dbe4ee;font-family:ui-sans-serif,system-ui,sans-serif;line-height:1.6}
-            main{max-width:760px;margin:0 auto;padding:3rem 1.5rem}
-            h1{font-size:1.6rem;font-weight:650}
-            code,pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.82rem;background:#151b24;border:1px solid #232c3a;border-radius:8px}
-            code{padding:.1rem .4rem;overflow-wrap:anywhere}
-            pre{padding:.9rem 1rem;overflow-x:auto}
-            p,li{color:#8794a5} b{color:#dbe4ee} a{color:#5fb4a2}
-          </style></head><body><main>
-          <h1>SGit API — Reference Vault</h1>
-          <p>This site is a <b>pure static projection</b> of an encrypted SG/Send vault:
-          the ciphertext object store, served at the same paths as the live API. There is
-          no server here — anything that works against this host works with no backend at
-          all, which is the conformance claim this deployment exists to prove.</p>
-          <p>The read key is published deliberately. It grants read, and only read:</p>
-          <pre>${READ_KEY}:${VAULT_ID}</pre>
-          <p>Try the read path — the first request of any reader, a filename computed
-          from the read key, no listing needed:</p>
-          <pre>GET ./api/vault/read/${VAULT_ID}/bare/refs/&lt;derived-ref-id&gt;</pre>
-          <p>Known gap, pinned by this repository's test suite: the sgit CLI's
-          <code>clone</code> currently depends on the batch endpoint
-          (<code>POST /api/vault/batch/…</code>), which a static host does not have.
-          Writes and authentication also do not work here — by design: this is a
-          published, read-only snapshot, and the ciphertext is the protection.</p>
-          <p>Source: <a href="https://github.com/SGit-AI/SGit-AI__API">SGit-AI/SGit-AI__API</a>
-          — see <code>vault/README.md</code> and <code>tests/unit/vault_conformance/</code>.</p>
-          </main></body></html>
-          EOF
 
       - name: Setup Pages
         uses: actions/configure-pages@v5

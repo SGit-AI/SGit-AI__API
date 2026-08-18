@@ -1,0 +1,47 @@
+# SGit API — static vault projection (sgit-ai.github.io/SGit-AI__API)
+
+> This host is a pure static projection of the SGit API's documentation vault: the
+> encrypted object store of vault `ivpijuvg`, served at the same paths as the live
+> SG/Send API, plus one HTML page that decrypts and renders the docs in the browser.
+> There is no server, no auth, and nothing but GETs. The host holds only ciphertext.
+
+The repository behind this site: https://github.com/SGit-AI/SGit-AI__API (branch `dev`).
+The plaintext of every document served here is committed there under `vault/` — if you
+are an agent without a JS runtime, read the markdown straight from the repository:
+
+- vault/docs/what-is-the-sgit-api.md — what the API is, what the server can/cannot see
+- vault/docs/read-contract.md — the GET walk, the client-side derivations, cache semantics
+- vault/docs/static-hosting.md — why this deployment is a conformance test; what breaks
+- vault/docs/roadmap.md — done/next toward the sgit.ai/deploy objective
+- vault/README.md — what the vault is and how it is published
+
+## Reading the vault from this host (no repository needed)
+
+Read key (published deliberately; grants read only):
+  c28b118c9a7a101910efa24a3a49b6cc6dbec8e8dcdc8fea671e89cecb0ab817
+Vault id: ivpijuvg
+
+The walk — every step a plain GET of a computed path:
+  ref file id = 'ref-pid-muw-' + hex(HMAC-SHA256(read_key, 'sg-vault-v1:file-id:ref:ivpijuvg'))[:12]
+  GET /SGit-AI__API/api/vault/read/ivpijuvg/bare/refs/<ref-id>     -> AES-256-GCM(iv||ct), JSON {commit_id}
+  GET .../bare/data/<commit-id>                                    -> commit {tree_id, parents, message_enc}
+  GET .../bare/data/<tree-id>                                      -> tree {entries: [{blob_id, tree_id, name_enc, ...}]}
+  GET .../bare/data/<blob-id>                                      -> a file's ciphertext
+  all decryption with the read key; *_enc metadata fields are base64(iv||ct) of UTF-8.
+A reference implementation in ~90 lines is served here as /SGit-AI__API/reader.js
+(browser WebCrypto and Node >= 19).
+
+## Known gap (pinned in CI)
+
+The sgit CLI's `clone` cannot yet read from this host — it depends on the live API's
+batch endpoint (POST /api/vault/batch/...). A proposal for GET-only static clone (which
+would also make a local folder a valid remote) is filed at
+team/comms/briefs/08/17/v0.1.2__proposal-brief__static-clone-a-get-is-open-a-file-and-a-folder-is-a-remote.md
+in the repository. Writes and authentication are absent by design: this is a published,
+read-only snapshot and the ciphertext is the protection.
+
+## Related
+
+- sgit documentation: https://sgit.ai/llms.txt
+- static hosting pattern: https://sgit.ai/vault/static-hosting.md
+- live-vault docs mechanism this site mirrors: https://sgit.ai/case-studies/live-vault-docs.md
