@@ -4,7 +4,7 @@
 Rule: if it is not listed here, it does not exist. Anything described elsewhere that is not
 here must be labelled "PROPOSED — does not exist yet."
 
-**Last verified:** 2026-08-17 (repo bootstrap + CI verified live + reference vault added)
+**Last verified:** 2026-09-30 (code unchanged since 18 Aug; docs/packs added — see Docs table)
 
 ---
 
@@ -62,6 +62,9 @@ existing tag** — the repo is seeded with `v0.1.0`.
 | Item | Location |
 |---|---|
 | Extraction dev pack (00–05) | `library/dev_packs/v0.33.59__sgit-api-extraction/` |
+| **vaults.sgit.ai dev pack (00–05 + evolution map)** — supersedes the extraction pack's discipline; PROPOSED, nothing implemented | `library/dev_packs/v0.1.5__vaults-sgit-ai/` |
+| Architect review of the SG/API across both repos (30 Sep) | `team/roles/architect/reviews/09/30/` |
+| Memo response: the Villager transformation (30 Sep) | `team/humans/dinis_cruz/claude-code-web/09/30/` |
 | Agent guidance | `.claude/CLAUDE.md` |
 
 ---
