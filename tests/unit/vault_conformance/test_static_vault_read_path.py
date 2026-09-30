@@ -101,13 +101,14 @@ class test_Static_Vault_Read_Path(TestCase):
                 assert response.read() == file.read_bytes(), f'byte drift: {rel}'
 
     def test__credential_tier_is_not_in_the_git_index(self):                            # the leak guard: local/ (vault key, token) must never be committed
-        result  = subprocess.run(['git', 'ls-files', 'vault/'],
+        result  = subprocess.run(['git', 'ls-files', 'vault/', 'programme/'],           # both committed vaults: deploy docs + programme
                                  cwd=REPO_ROOT, capture_output=True, text=True)
         if result.returncode != 0:                                                      # not a git checkout (e.g. sdist) — nothing to guard
             self.skipTest('not running inside a git checkout')
         tracked = result.stdout.splitlines()
-        assert any(line.startswith('vault/.sg_vault/bare/') for line in tracked)        # the ciphertext mirror IS committed
+        assert any(line.startswith('vault/.sg_vault/bare/') for line in tracked)        # the deploy vault's ciphertext mirror IS committed
         for line in tracked:
+            assert not line.startswith('programme/.sg_vault/')                          # the programme vault is PRIVATE: nothing of its store, ever
             assert not line.startswith('vault/.sg_vault/local/')                        # the plaintext credential tier is NOT
             assert not line.startswith('vault/.sg_vault/work/' )
 

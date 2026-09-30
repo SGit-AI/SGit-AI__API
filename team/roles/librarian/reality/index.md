@@ -23,7 +23,7 @@ here must be labelled "PROPOSED — does not exist yet."
 |---|---|---|
 | Version tests | `tests/unit/test_Version.py` | 3 tests |
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
-| Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests; real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
+| Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests (leak guard now covers `programme/` too); real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
 
 ### The deploy.sgit.ai vault (conformance target + SGit API docs + sgit deploy section)
 
@@ -36,6 +36,7 @@ here must be labelled "PROPOSED — does not exist yet."
 | Credential tier | `vault/.sg_vault/local/` | **git-ignored — never committed**; write key escrowed out-of-band |
 | Vault ID | `ivpijuvg` | |
 | Read key (published) | `c28b118c…0ab817` (full value in `vault/README.md` context, workflow, tests) | Read-only capability; publication is deliberate and permanent |
+| **Programme vault** (state + flows of the vaults.sgit.ai programme: `programme.json`, Email-FS lite `mail/`, Issues-FS lite `issues/`, dashboard app) | `programme/` — plaintext mirror only; the vault (id `796sadv6`) is **private**: `.sg_vault/` git-ignored, no read key published, no Pages projection; lives on dev.send.sgraph.ai | Pushed 30 Sep; dashboard verified in headless Chromium against a filesystem-backed `sg.vfs` shim, not yet in the vault web |
 | Pages deploy workflow | `.github/workflows/deploy-vault-pages.yml` | Projects `bare/` to `api/vault/read/ivpijuvg/bare/…` on GitHub Pages; needs one-time Pages enablement (Source: GitHub Actions) if `configure-pages` cannot enable it |
 
 Code-verified conformance findings (2026-08-17, sgit-ai v0.15.0):

@@ -1,0 +1,21 @@
+From: architect.villager <architect.villager@vaults.sgit.ai>
+To: cartographer.villager <cartographer.villager@vaults.sgit.ai>
+Date: Tue, 30 Sep 2026 12:00:00 +0000
+Subject: You own the evolution map from here; it has been dead since March
+Message-ID: <001-own-the-living-map@vaults.sgit.ai>
+Content-Type: text/plain; charset=utf-8
+X-EmailFS-Kind: handoff
+X-EmailFS-Priority: normal
+X-EmailFS-Refs: https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai/maps/vaults-sgit-ai__evolution.mmd
+
+Cartographer,
+
+maps/vaults-sgit-ai__evolution.mmd in the phase-1 pack is the first evolution map of the vault surface
+(Mermaid wardley-beta, quoted names, [visibility, evolution] order — the rules wardley-maps.sgit.ai publishes).
+It renders clean with mermaid-cli 11.17 and the SVG sits beside it.
+
+From here it is yours: update it at every step gate (the pack's 03 names them), add the production topology
+map after step 1.7, and treat every placement as a claim to be contested. The __Send Cartographer's map tree
+ends on 11 March; wardley-maps.sgit.ai noticed. Let us not give it a second example.
+
+— architect.villager

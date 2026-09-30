@@ -1,0 +1,325 @@
+{
+ "title": "vaults.sgit.ai — the programme",
+ "updated": "2026-09-30",
+ "repo": "https://github.com/SGit-AI/SGit-AI__API",
+ "packs": {
+  "phase-1": "https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai",
+  "phase-2": "https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai__phase-2-vault-services"
+ },
+ "phases": [
+  {
+   "id": "1",
+   "title": "The Villager transformation",
+   "status": "planned",
+   "team": "villager",
+   "summary": "Same vault features, new clean home at vaults.sgit.ai: API + web in one repo, one image, own Lambda/CFN/Terraform, fresh history, README-test docs.",
+   "steps": [
+    {
+     "id": "1.0",
+     "title": "Baseline in __Send",
+     "status": "todo",
+     "owner": "architect.villager",
+     "gate": "counts recorded; contract JSON has 28 paths; flattened UI builds"
+    },
+    {
+     "id": "1.1",
+     "title": "Decisions D1–D10, questions Q1–Q10",
+     "status": "todo",
+     "owner": "dinis.human",
+     "gate": "no open row without an answer or a stated default"
+    },
+    {
+     "id": "1.2",
+     "title": "Repo skeleton + rename",
+     "status": "todo",
+     "owner": "devops.villager",
+     "gate": "CI green; archive pointer in README"
+    },
+    {
+     "id": "1.3",
+     "title": "The API",
+     "status": "todo",
+     "owner": "dev.villager",
+     "gate": "tests same count; contract diff clean; leak grep empty; sgit round-trip"
+    },
+    {
+     "id": "1.4",
+     "title": "The vault web (flattened)",
+     "status": "todo",
+     "owner": "dev.villager",
+     "gate": "UI suites same counts; no sgraph host; no component edits"
+    },
+    {
+     "id": "1.5",
+     "title": "One image, every target",
+     "status": "todo",
+     "owner": "devops.villager",
+     "gate": "smoke 8/8 ×4; full cycle green; Lambda measured; terraform plan clean"
+    },
+    {
+     "id": "1.6",
+     "title": "Docs + the README test",
+     "status": "todo",
+     "owner": "qa.villager",
+     "gate": "zero questions, Docker + one cloud target"
+    },
+    {
+     "id": "1.7",
+     "title": "Cutover",
+     "status": "todo",
+     "owner": "devops.villager",
+     "gate": "DNS, data copy, CLI release, redirects, reality docs"
+    }
+   ]
+  },
+  {
+   "id": "2",
+   "title": "Vault services: vaults managing vaults",
+   "status": "proposed",
+   "team": "explorer",
+   "summary": "Key management, key-value, secrets as curated 'app' endpoints that only return ciphertext; PKI-signed requests; rotation + backup as a built-in orchestration; observability; easy deploy for agents, humans and CI.",
+   "steps": [
+    {
+     "id": "2.0",
+     "title": "Design brief (this pack's phase-2 folder)",
+     "status": "in-progress",
+     "owner": "architect.villager",
+     "gate": "Dinis confirms the model and the sequencing"
+    },
+    {
+     "id": "2.1",
+     "title": "Auth mode 3: vault-backed token lookup",
+     "status": "proposed",
+     "owner": "explorer.send",
+     "gate": "a vault deployment validates tokens against a credentials vault, no Admin Lambda"
+    },
+    {
+     "id": "2.2",
+     "title": "Apps endpoints: keys / kv / secrets (ciphertext only)",
+     "status": "proposed",
+     "owner": "explorer.send",
+     "gate": "contract + threat model agreed"
+    },
+    {
+     "id": "2.3",
+     "title": "PKI-signed requests",
+     "status": "proposed",
+     "owner": "explorer.send",
+     "gate": "signed request verified on one route"
+    },
+    {
+     "id": "2.4",
+     "title": "Rotation + backup orchestration",
+     "status": "proposed",
+     "owner": "explorer.send",
+     "gate": "weekly rotate/backup runs against a test deployment"
+    },
+    {
+     "id": "2.5",
+     "title": "Observability of vault traffic",
+     "status": "proposed",
+     "owner": "devops.villager",
+     "gate": "per-vault read/write counts visible without touching plaintext"
+    },
+    {
+     "id": "2.6",
+     "title": "Deploy for agents/humans/CI",
+     "status": "proposed",
+     "owner": "devops.villager",
+     "gate": "an agent deploys a vault from a one-line command"
+    }
+   ]
+  }
+ ],
+ "decisions": [
+  {
+   "id": "D1",
+   "title": "Repo name",
+   "recommendation": "rename SGit-AI__API → SGit-AI__Vaults (API + web + deploy)",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D2",
+   "title": "Python package name",
+   "recommendation": "sgit_vaults (+ sgit_vaults__ui); the rename is the major bump",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D3",
+   "title": "History pointer wording",
+   "recommendation": "README: taken from __Send @ 5d50ae8; paths in pack 01",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D4",
+   "title": "Lambda artefact",
+   "recommendation": "one container image everywhere, gated on cold-start measurement",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D5",
+   "title": "Existing vault data",
+   "recommendation": "one-time S3 copy at cutover; old host read-only 90 days",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D6",
+   "title": "Hosted auth",
+   "recommendation": "remote lookup → Send Admin (transitional) for hosted; env single key for self-host; registry is phase 2",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D7",
+   "title": "UI clean-up depth",
+   "recommendation": "flatten the build output, no component edits; renames after cutover",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D8",
+   "title": "__Send's joint image",
+   "recommendation": "retire after cutover",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D9",
+   "title": "Domains + CLI default",
+   "recommendation": "vaults.sgit.ai / dev.vaults.sgit.ai; old hosts 301 for the grace period",
+   "status": "open",
+   "answer": null
+  },
+  {
+   "id": "D10",
+   "title": "Team",
+   "recommendation": "restart the Villager team; this pack is its handover brief",
+   "status": "open",
+   "answer": null
+  }
+ ],
+ "questions": [
+  {
+   "id": "Q1",
+   "title": "Are read-only share tokens a vault feature? (they are transfers)",
+   "default": "no",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q2",
+   "title": "Are public previews a vault feature?",
+   "default": "no",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q3",
+   "title": "AWS account + region; who runs the OIDC bootstrap",
+   "default": "__Send account, eu-west-2, Dinis",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q4",
+   "title": "Image registry",
+   "default": "ghcr.io/sgit-ai/vaults",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q5",
+   "title": "DNS: vaults.sgit.ai, dev.vaults.sgit.ai, deploy.sgit.ai",
+   "default": "CNAME at the DNS provider",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q6",
+   "title": "CLI: default host, whoami probe, test-server import path, static transport status",
+   "default": "thread opened",
+   "status": "open",
+   "owner": "cli.sgit"
+  },
+  {
+   "id": "Q7",
+   "title": "sgit.ai handover of the deploy vault (fyofmkvr → ivpijuvg on vaults.sgit.ai)",
+   "default": "at cutover",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q8",
+   "title": "Terraform scope",
+   "default": "AWS only",
+   "status": "open",
+   "owner": "dinis.human"
+  },
+  {
+   "id": "Q9",
+   "title": "check-token indicator in the vault web calls a Send route",
+   "default": "keep during grace; GET /api/info/token later",
+   "status": "open",
+   "owner": "explorer.send"
+  },
+  {
+   "id": "Q10",
+   "title": "Grace period length",
+   "default": "90 days",
+   "status": "open",
+   "owner": "dinis.human"
+  }
+ ],
+ "agents": [
+  {
+   "id": "dinis.human",
+   "label": "Dinis (project lead)",
+   "scope": "decisions, questions, priorities"
+  },
+  {
+   "id": "architect.villager",
+   "label": "Architect (Villager)",
+   "scope": "the pack, the map, the gates"
+  },
+  {
+   "id": "dev.villager",
+   "label": "Dev (Villager)",
+   "scope": "API move, UI flatten, tests"
+  },
+  {
+   "id": "devops.villager",
+   "label": "DevOps (Villager)",
+   "scope": "image, targets, CFN, Terraform, cutover"
+  },
+  {
+   "id": "qa.villager",
+   "label": "QA (Villager)",
+   "scope": "parity proof, README test"
+  },
+  {
+   "id": "cartographer.villager",
+   "label": "Cartographer (Villager)",
+   "scope": "the living evolution map"
+  },
+  {
+   "id": "librarian.villager",
+   "label": "Librarian (Villager)",
+   "scope": "reality docs, changelogs, this vault's index"
+  },
+  {
+   "id": "cli.sgit",
+   "label": "sgit CLI team",
+   "scope": "default host, whoami, static transport"
+  },
+  {
+   "id": "explorer.send",
+   "label": "Explorer team (__Send)",
+   "scope": "share tokens, previews, token registry follow-ups"
+  }
+ ]
+}

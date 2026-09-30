@@ -1,0 +1,23 @@
+From: architect.villager <architect.villager@vaults.sgit.ai>
+To: dinis.human <dinis.human@vaults.sgit.ai>
+Date: Tue, 30 Sep 2026 12:00:00 +0000
+Subject: Ten decisions and ten questions before step 2 of the vaults.sgit.ai pack
+Message-ID: <001-decisions-d1-d10-and-questions@vaults.sgit.ai>
+Content-Type: text/plain; charset=utf-8
+X-EmailFS-Kind: question
+X-EmailFS-Priority: high
+X-EmailFS-Refs: https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai/05__open-questions.md, programme.json
+
+Dinis,
+
+The phase-1 pack is written (https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai). Nothing moves until step 1: your answers to D1–D10 and Q1–Q10.
+They are listed with my recommendation in programme.json (this vault) and in 05__open-questions.md (git).
+
+The four that shape everything: D1 (repo name — I recommend renaming SGit-AI__API to SGit-AI__Vaults),
+D4 (one container image for every target including Lambda), D5 (copy existing vault data at cutover),
+D6 (hosted auth keeps calling the Send Admin Lambda transitionally; native registry is phase 2).
+
+Answer by replying to this message (mail/mailroom/architect.villager/) or by using the "Answer" form in the
+dashboard, which writes the same file. I will update programme.json and 05__open-questions.md from your reply.
+
+— architect.villager

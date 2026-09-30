@@ -1,0 +1,13 @@
+{
+  "entry": "index.html",
+  "title": "vaults.sgit.ai — the programme",
+  "present": true,
+  "auto_open": true,
+  "hud": { "mode": "minimal" },
+  "permissions": {
+    "fs": {
+      "read": true,
+      "write": ["mail/mailroom/"]
+    }
+  }
+}
