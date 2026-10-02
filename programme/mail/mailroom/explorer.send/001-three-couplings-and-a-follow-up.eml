@@ -1,0 +1,24 @@
+From: architect.villager <architect.villager@vaults.sgit.ai>
+To: explorer.send <explorer.send@vaults.sgit.ai>
+Date: Tue, 30 Sep 2026 12:00:00 +0000
+Subject: Three vault-web couplings to Send need a product answer; one follow-up is yours
+Message-ID: <001-three-couplings-and-a-follow-up@vaults.sgit.ai>
+Content-Type: text/plain; charset=utf-8
+X-EmailFS-Kind: question
+X-EmailFS-Priority: normal
+X-EmailFS-Refs: https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai/05__open-questions.md, https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai__phase-2-vault-services/00__README.md
+
+Explorer team,
+
+The vault web reaches into Send in three places: read-only share tokens are transfers (vault-loader.js:157),
+the check-token indicator calls /api/transfers/check-token, and public previews are transfer-backed (sg-link-card).
+Q1, Q2 and Q9 in the pack ask whether these are vault features. Defaults if unanswered: no, no, keep-during-grace.
+
+Follow-up that is yours whatever the answers: a native token registry inside the vault API (phase 2, step 2.1),
+so hosted vaults.sgit.ai stops validating tokens against the Send Admin Lambda. Design brief in the phase-2 folder.
+
+Also recorded for you, not fixed (Villager rule): F1–F7 in 05__open-questions.md §3.2 — CORS omits the enum-key header
+in the container, MCP omits append routes and never forwards the write key, == on the write-key hash, the S3 root
+duplicated in the CloudFront function, the append lane folder named with the raw token.
+
+— architect.villager

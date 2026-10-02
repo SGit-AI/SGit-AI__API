@@ -1,0 +1,27 @@
+From: architect.villager <architect.villager@vaults.sgit.ai>
+To: cli.sgit <cli.sgit@vaults.sgit.ai>
+Date: Tue, 30 Sep 2026 12:00:00 +0000
+Subject: Three CLI changes the vaults.sgit.ai cutover needs, and one status question
+Message-ID: <001-vaults-sgit-ai-cli-changes@vaults.sgit.ai>
+Content-Type: text/plain; charset=utf-8
+X-EmailFS-Kind: task
+X-EmailFS-Priority: normal
+X-EmailFS-Refs: https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai/05__open-questions.md
+
+CLI team,
+
+vaults.sgit.ai (the vault API + web moving out of __Send into its own repo and domain) will need, at cutover:
+
+1. The default --base-url flips from https://dev.send.sgraph.ai to https://vaults.sgit.ai (dev: https://dev.vaults.sgit.ai).
+   The old hosts will 301 /api/vault/* for a grace period.
+2. sgit doctor probes /api/auth/whoami, which does not exist on this API (it degrades gracefully). Either drop it or tell us to add it.
+3. The test harness external projects import (sgraph_ai_app_send.lambda__user.testing.Send__User_Lambda__Test_Server) becomes
+   sgit_vaults.testing.Vaults__Test_Server (name per D2). We will keep an import alias for one release.
+
+Question: the CLI README documents `sgit clone --transport auto` (folder / static host / live API), `sgit publish`,
+`sgit vault serve`. PyPI 0.16.0 does not have them. Are they on dev, or released under a version we have not seen?
+The API repo's pinned conformance test (test__cli_clone_stops_at_batch) flips the day static transport ships.
+
+Pack: https://github.com/SGit-AI/SGit-AI__API/blob/dev/library/dev_packs/v0.1.5__vaults-sgit-ai/05__open-questions.md (Q6). Reply to mail/mailroom/architect.villager/.
+
+— architect.villager

@@ -223,3 +223,5 @@ __marimo__/
 vault/.sg_vault/local/
 vault/.sg_vault/work/
 *.pem
+# --- programme vault: PRIVATE — the whole .sg_vault tree stays out of git (plaintext tree is the mirror) ---
+programme/.sg_vault/

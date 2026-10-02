@@ -57,3 +57,10 @@ and the ciphertext is the protection.
 - the current sgit.ai deploy page (renders the SG/Send team's vault): https://sgit.ai/deploy/index.md
 - the mechanism this site uses: https://sgit.ai/case-studies/live-vault-docs.md
 - static hosting pattern: https://sgit.ai/vault/static-hosting.md
+
+## The programme vault (added 30 Sep 2026)
+
+The state and flows of the vaults.sgit.ai programme live in a PRIVATE vault (not projected here,
+no read key published). Its plaintext working tree is mirrored in the repository at programme/
+(README.md explains the conventions); the vault itself is on the live server, opened with a key
+held by the programme's participants.

@@ -1,0 +1,66 @@
+%% vaults.sgit.ai — the Villager transformation, as an evolution map
+%% Mermaid wardley-beta. Coordinates are [visibility, evolution] (NOT x,y). Every name quoted.
+%% Placements are claims to be contested (per wardley-maps.sgit.ai). Author: Architect, 30 Sep 2026.
+%% "evolve" lines are what this pack moves. Components without an evolve line are already where they belong.
+wardley-beta
+  title "vaults.sgit.ai — today, and what the transformation moves"
+
+  anchor "Run my own vault server" [0.98, 0.30]
+  anchor "Use sgit against a vault" [0.98, 0.62]
+
+  component "README test / docs" [0.90, 0.12]
+  component "vault web UI" [0.88, 0.40]
+  component "sgit CLI" [0.86, 0.66]
+
+  component "Terraform" [0.70, 0.06]
+  component "CloudFormation templates" [0.66, 0.34]
+  component "Docker image" [0.64, 0.66]
+  component "Lambda zip deploy" [0.60, 0.36]
+  component "access token / auth" [0.58, 0.32]
+  component "vault pointer API" [0.56, 0.58]
+  component "append lane API" [0.52, 0.40]
+  component "presigned large blob" [0.50, 0.54]
+
+  component "own token registry" [0.36, 0.08]
+  component "static-read projection" [0.34, 0.50]
+  component "storage backends" [0.32, 0.66]
+  component "sgit read contract" [0.26, 0.72]
+  component "S3" [0.14, 0.90]
+  component "Web Crypto" [0.12, 0.92]
+
+  "Run my own vault server" -> "README test / docs"
+  "Run my own vault server" -> "Docker image"
+  "Run my own vault server" -> "CloudFormation templates"
+  "Run my own vault server" -> "Terraform"
+  "Use sgit against a vault" -> "sgit CLI"
+  "Use sgit against a vault" -> "vault web UI"
+  "sgit CLI" -> "vault pointer API"
+  "vault web UI" -> "vault pointer API"
+  "vault web UI" -> "append lane API"
+  "vault web UI" -> "Web Crypto"
+  "Docker image" -> "vault pointer API"
+  "Docker image" -> "vault web UI"
+  "CloudFormation templates" -> "Docker image"
+  "Terraform" -> "Docker image"
+  "Lambda zip deploy" -> "vault pointer API"
+  "vault pointer API" -> "access token / auth"
+  "vault pointer API" -> "storage backends"
+  "vault pointer API" -> "sgit read contract"
+  "presigned large blob" -> "S3"
+  "append lane API" -> "storage backends"
+  "storage backends" -> "S3"
+  "static-read projection" -> "sgit read contract"
+  "access token / auth" -> "own token registry"
+
+  evolve "README test / docs" 0.62
+  evolve "vault web UI" 0.66
+  evolve "Terraform" 0.40
+  evolve "CloudFormation templates" 0.62
+  evolve "access token / auth" 0.60
+  evolve "presigned large blob" 0.66
+  evolve "static-read projection" 0.68
+  evolve "vault pointer API" 0.70
+
+  note "Retired by the transformation: the pytest-driven Lambda zip deploy (one image everywhere)" [0.10, 0.02]
+  note "own token registry stays at genesis: Explorer follow-up, not this pack" [0.06, 0.02]
+  note "Already product or commodity: protocol, read contract, storage, CLI. The job is the left half." [0.02, 0.02]

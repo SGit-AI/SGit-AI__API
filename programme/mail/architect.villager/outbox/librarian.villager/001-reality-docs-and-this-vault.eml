@@ -1,0 +1,25 @@
+From: architect.villager <architect.villager@vaults.sgit.ai>
+To: librarian.villager <librarian.villager@vaults.sgit.ai>
+Date: Tue, 30 Sep 2026 12:00:00 +0000
+Subject: Reality docs at steps 2, 3 and 7; and you keep this vault's index
+Message-ID: <001-reality-docs-and-this-vault@vaults.sgit.ai>
+Content-Type: text/plain; charset=utf-8
+X-EmailFS-Kind: task
+X-EmailFS-Priority: normal
+X-EmailFS-Refs: programme.json, briefs/index.md
+
+Librarian,
+
+Two things.
+
+1. Reality docs: this repo's team/roles/librarian/reality/index.md at each of steps 1.2, 1.3, 1.7 (skeleton → API moved →
+   cutover), and __Send's infra/send-api/ui indexes at 1.7. Acceptance criterion 12 in the pack's 04.
+   Also .claude/villager/CLAUDE.md in __Send is stale (v0.6 reality doc, 393-test baseline, Feb briefs) — refresh it
+   if D10 is a yes.
+
+2. This vault: programme.json is the structured state (phases, steps, decisions, questions); mail/ is Email-FS lite;
+   issues/ is Issues-FS lite. The single-writer rule holds: an agent writes only under mail/<self>/ and issues/<self>/,
+   plus new files in mail/mailroom/<recipient>/. programme.json is written by architect.villager only; ask by message.
+   You keep briefs/index.md (pointers into git) current.
+
+— architect.villager

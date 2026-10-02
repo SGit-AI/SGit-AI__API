@@ -1,0 +1,260 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>vaults.sgit.ai — the programme</title>
+<style>
+  /* All CSS inlined — the vault authoring contract forbids <link href> against vault paths.
+     Palette mirrors sgit.ai's shared stylesheet (light theme), same as the deploy vault. */
+  :root{ --bg:#faf9f5; --panel:#ffffff; --panel2:#f2f0e9; --line:#e5e1d5; --fg:#1c1d21; --dim:#5c5f66;
+         --dim2:#8a8d94; --accent:#0f766e; --accent-dk:#115e59; --yellow:#a16207; --warm:#b45309; --red:#b3261e }
+  *{ box-sizing:border-box }
+  body{ margin:0; background:var(--bg); color:var(--fg); line-height:1.55;
+        font-family:ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif }
+  .topbar{ display:flex; align-items:center; gap:.8rem; padding:.7rem 1.2rem; border-bottom:1px solid var(--line); background:var(--panel) }
+  .brand{ font-weight:800; font-size:1.05rem; letter-spacing:-.02em; white-space:nowrap; text-decoration:none; color:var(--fg) }
+  .brand span{ color:var(--accent) }
+  .topbar .meta{ margin-left:auto; font-size:.74rem; color:var(--dim2); font-family:ui-monospace,Menlo,Consolas,monospace }
+  .layout{ display:flex; min-height:calc(100vh - 49px) }
+  nav.side{ width:230px; flex-shrink:0; border-right:1px solid var(--line); padding:1rem 0 2rem; background:var(--panel) }
+  nav.side .sec{ padding:.9rem 1.2rem .25rem; font-size:.68rem; letter-spacing:.08em; text-transform:uppercase; color:var(--dim2); font-weight:600 }
+  nav.side a{ display:flex; justify-content:space-between; padding:.32rem 1.2rem; color:var(--dim); text-decoration:none; font-size:.87rem; border-left:2px solid transparent }
+  nav.side a:hover{ color:var(--fg) }
+  nav.side a.active{ color:var(--accent-dk); border-left-color:var(--accent); background:color-mix(in srgb, var(--accent) 7%, transparent); font-weight:600 }
+  nav.side a .n{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.7rem; color:var(--dim2) }
+  .content{ flex:1; min-width:0; padding:1.6rem clamp(1.2rem,4vw,3rem) 3.5rem; max-width:960px }
+  h1{ font-size:clamp(1.4rem,4vw,1.9rem); font-weight:700; margin:.2rem 0 .6rem; letter-spacing:-.01em }
+  h2{ font-size:1.1rem; font-weight:650; margin:1.6rem 0 .5rem }
+  h3{ font-size:.95rem; font-weight:650; margin:1.2rem 0 .4rem }
+  p, li, td{ color:var(--dim); font-size:.9rem }
+  strong{ color:var(--fg) } a{ color:var(--accent) }
+  code{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.8em; background:var(--panel2); border:1px solid var(--line); border-radius:6px; padding:.06rem .3rem; overflow-wrap:anywhere }
+  pre{ background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:.8rem 1rem; overflow-x:auto; font-size:.78rem; white-space:pre-wrap }
+  table{ border-collapse:collapse; width:100%; margin:.6rem 0; font-size:.85rem }
+  th,td{ border:1px solid var(--line); padding:.4rem .6rem; text-align:left; vertical-align:top }
+  th{ color:var(--fg); background:var(--panel2); font-weight:600 }
+  .badge{ display:inline-block; font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.62rem; letter-spacing:.06em; text-transform:uppercase;
+          padding:.12rem .45rem; border-radius:999px; border:1px solid var(--line); white-space:nowrap }
+  .s-todo{ color:var(--dim2) } .s-in-progress{ color:var(--accent-dk); border-color:var(--accent) } .s-done{ color:var(--accent-dk); background:color-mix(in srgb,var(--accent) 12%,transparent) }
+  .s-blocked{ color:var(--red); border-color:var(--red) } .s-proposed{ color:var(--yellow) } .s-planned{ color:var(--warm) } .s-open{ color:var(--yellow); border-color:var(--yellow) } .s-answered{ color:var(--accent-dk) }
+  .cards{ display:grid; gap:.9rem; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); margin-top:1rem }
+  article{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.95rem 1.05rem }
+  article h2{ margin:0 0 .35rem; font-size:.98rem } article p{ margin:.2rem 0; font-size:.84rem }
+  .msg{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.9rem 1.05rem; margin:.7rem 0 }
+  .msg .hdr{ font-family:ui-monospace,Menlo,Consolas,monospace; font-size:.72rem; color:var(--dim2); margin-bottom:.4rem }
+  .msg .hdr b{ color:var(--fg); font-weight:600 }
+  .msg .subject{ font-weight:650; color:var(--fg); margin:.1rem 0 .4rem }
+  .where{ font-size:.7rem; color:var(--dim2); font-family:ui-monospace,Menlo,Consolas,monospace }
+  form.answer{ background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:.9rem 1.05rem; margin:1rem 0 }
+  form.answer label{ display:block; font-size:.8rem; color:var(--dim); margin:.5rem 0 .2rem }
+  form.answer select, form.answer input, form.answer textarea{ width:100%; padding:.5rem .6rem; border:1px solid var(--line); border-radius:8px; font:inherit; font-size:.88rem; background:var(--bg) }
+  form.answer textarea{ min-height:5.5rem }
+  form.answer button{ margin-top:.7rem; padding:.5rem .9rem; border:none; border-radius:8px; background:var(--accent-dk); color:#fff; font-weight:600; cursor:pointer }
+  form.answer button:disabled{ background:#9ab; cursor:not-allowed }
+  .note{ font-size:.78rem; color:var(--dim2) }
+  footer{ color:var(--dim2); font-size:.74rem; margin-top:2.4rem; border-top:1px solid var(--line); padding-top:1rem }
+  @media (max-width:760px){ .layout{ flex-direction:column } nav.side{ width:auto; border-right:none; border-bottom:1px solid var(--line) } }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <a class="brand" href="#overview">vaults<span>.sgit.ai</span> — the programme</a>
+  <span class="meta" id="meta">loading…</span>
+</div>
+<div class="layout">
+  <nav class="side" id="nav"></nav>
+  <div class="content">
+    <div id="page"><p>Waiting for the vault bridge…</p></div>
+    <footer>This dashboard is a vault app. Everything it shows was read from files in this encrypted vault over
+    <code>sg.vfs</code>; the only thing it can write is a message into <code>mail/mailroom/</code>. The plan and the code
+    live in git — this vault is the state and the flows.</footer>
+  </div>
+</div>
+
+<script>
+'use strict';
+/* ---------- bridge ---------- */
+const hasSg = () => window.sg && window.sg.vfs;
+async function readText(p){ try { return await sg.vfs.readText(p); } catch(e){ return null; } }
+async function list(prefix){ try { return await sg.vfs.list(prefix); } catch(e){ return []; } }
+const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const badge = s => '<span class="badge s-'+esc(String(s||'').replace(/\s+/g,'-'))+'">'+esc(s)+'</span>';
+
+/* ---------- minimal markdown (bodies of messages and issues) ---------- */
+function inline(s){
+  s = esc(s);
+  s = s.replace(/`([^`]+)`/g, (_,c)=>'<code>'+c+'</code>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/(https?:\/\/[^\s)]+)/g, u=>'<a href="'+u+'" target="_blank" rel="noopener">'+u+'</a>');
+  return s;
+}
+function md(text){
+  const lines = String(text||'').split('\n'); const out=[]; let para=[]; let i=0;
+  const flush=()=>{ if(para.length){ out.push('<p>'+inline(para.join(' '))+'</p>'); para=[]; } };
+  while(i<lines.length){
+    const l=lines[i];
+    if(/^```/.test(l)){ flush(); const c=[]; i++; while(i<lines.length && !/^```/.test(lines[i])) c.push(lines[i++]); i++; out.push('<pre>'+esc(c.join('\n'))+'</pre>'); continue; }
+    if(/^#{1,3} /.test(l)){ flush(); const n=l.match(/^#+/)[0].length; out.push('<h'+n+'>'+inline(l.replace(/^#+ /,''))+'</h'+n+'>'); i++; continue; }
+    if(/^\|/.test(l)){ flush(); const rows=[]; while(i<lines.length && /^\|/.test(lines[i])) rows.push(lines[i++]);
+      const cells=r=>r.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      let h='<table><tr>'+cells(rows[0]).map(c=>'<th>'+inline(c)+'</th>').join('')+'</tr>';
+      for(let r=2;r<rows.length;r++) h+='<tr>'+cells(rows[r]).map(c=>'<td>'+inline(c)+'</td>').join('')+'</tr>';
+      out.push(h+'</table>'); continue; }
+    if(/^\s*(\d+\.|[-*]) /.test(l)){ flush(); const ol=/^\s*\d+\./.test(l); const items=[];
+      while(i<lines.length && /^\s*(\d+\.|[-*]) /.test(lines[i])) items.push(lines[i++].replace(/^\s*(\d+\.|[-*]) /,''));
+      out.push((ol?'<ol>':'<ul>')+items.map(x=>'<li>'+inline(x)+'</li>').join('')+(ol?'</ol>':'</ul>')); continue; }
+    if(/^\s*$/.test(l)){ flush(); i++; continue; }
+    para.push(l.trim()); i++;
+  }
+  flush(); return out.join('\n');
+}
+
+/* ---------- parsers ---------- */
+function parseEml(text){
+  const [head, ...rest] = String(text).split(/\n\n/); const h={};
+  head.split('\n').forEach(line=>{ const m=line.match(/^([\w-]+):\s*(.*)$/); if(m) h[m[1].toLowerCase()]=m[2]; });
+  return { headers:h, body:rest.join('\n\n') };
+}
+function parseFrontmatter(text){
+  const m = String(text).match(/^---\n([\s\S]*?)\n---\n?([\s\S]*)$/); const fm={};
+  if(!m) return { fm, body:text };
+  m[1].split('\n').forEach(line=>{ const k=line.match(/^([\w-]+):\s*(.*)$/); if(k) fm[k[1]]=k[2]; });
+  return { fm, body:m[2] };
+}
+
+/* ---------- state ---------- */
+let P=null, MAIL={}, ISSUES={}, WRITABLE=false;
+
+async function loadAll(){
+  P = JSON.parse(await readText('programme.json'));
+  for(const a of P.agents){
+    MAIL[a.id] = { mailroom:[], inbox:[], done:[], outbox:[] };
+    ISSUES[a.id] = { open:[], blocked:[], done:[] };
+  }
+  const mailFiles = (await list('mail')).filter(e => /\.eml$/.test(e.path));
+  for(const f of mailFiles){
+    const parts = f.path.split('/');                                  // mail/<x>/<box>/... or mail/mailroom/<r>/...
+    const text = await readText(f.path); if(!text) continue;
+    const m = parseEml(text); m.path=f.path;
+    if(parts[1]==='mailroom'){ const r=parts[2]; if(MAIL[r]) MAIL[r].mailroom.push(m); }
+    else { const a=parts[1], box=parts[2]; if(MAIL[a] && MAIL[a][box]) MAIL[a][box].push(m); }
+  }
+  const issueFiles = (await list('issues')).filter(e => /\.md$/.test(e.path));
+  for(const f of issueFiles){
+    const [,agent,state] = f.path.split('/'); const text = await readText(f.path); if(!text) continue;
+    const it = parseFrontmatter(text); it.path=f.path; it.title=(it.body.match(/^# (.+)$/m)||[,f.path])[1];
+    if(ISSUES[agent] && ISSUES[agent][state]) ISSUES[agent][state].push(it);
+  }
+  try { WRITABLE = !!(sg.app && sg.app.writable); } catch(e){ WRITABLE=false; }
+}
+
+/* ---------- views ---------- */
+function overview(){
+  const open = P.decisions.filter(d=>d.status==='open').length, openQ = P.questions.filter(q=>q.status==='open').length;
+  const waiting = P.agents.map(a=>({a, n:MAIL[a.id].mailroom.length})).filter(x=>x.n);
+  let h = '<h1>'+esc(P.title)+'</h1><p class="note">state as of <b>'+esc(P.updated)+'</b> · '+esc(P.repo)+'</p>';
+  h += '<div class="cards">';
+  h += '<article><h2>Decisions</h2><p><strong>'+open+'</strong> of '+P.decisions.length+' open — all with a recommendation. Owner: dinis.human.</p></article>';
+  h += '<article><h2>Questions</h2><p><strong>'+openQ+'</strong> of '+P.questions.length+' open — each has a default that applies at step 1.1 if unanswered.</p></article>';
+  h += '<article><h2>Unread mail</h2>'+(waiting.length? waiting.map(x=>'<p><a href="#agent:'+esc(x.a.id)+'">'+esc(x.a.label)+'</a>: <strong>'+x.n+'</strong> in the mailroom</p>').join('') : '<p>nothing waiting</p>')+'</article>';
+  h += '</div>';
+  for(const ph of P.phases){
+    h += '<h2>Phase '+esc(ph.id)+' — '+esc(ph.title)+' '+badge(ph.status)+'</h2><p>'+esc(ph.summary)+'</p>';
+    h += '<table><tr><th>Step</th><th>Status</th><th>Owner</th><th>Gate</th></tr>';
+    for(const s of ph.steps) h += '<tr><td><strong>'+esc(s.id)+'</strong> '+esc(s.title)+'</td><td>'+badge(s.status)+'</td><td><a href="#agent:'+esc(s.owner)+'">'+esc(s.owner)+'</a></td><td>'+esc(s.gate)+'</td></tr>';
+    h += '</table>';
+  }
+  return h;
+}
+function decisions(){
+  let h='<h1>Decisions</h1><p>Answer by message to <code>architect.villager</code>, or with the form below (it writes the same file into <code>mail/mailroom/architect.villager/</code>). The architect updates <code>programme.json</code> and the pack\'s <code>05__open-questions.md</code> from the reply.</p>';
+  h+='<table><tr><th>#</th><th>Decision</th><th>Recommendation</th><th>Status</th></tr>';
+  for(const d of P.decisions) h+='<tr><td><strong>'+esc(d.id)+'</strong></td><td>'+esc(d.title)+'</td><td>'+esc(d.recommendation)+(d.answer?'<br><strong>Answer:</strong> '+esc(d.answer):'')+'</td><td>'+badge(d.status)+'</td></tr>';
+  h+='</table>'+answerForm(P.decisions.map(d=>d.id));
+  return h;
+}
+function questions(){
+  let h='<h1>Questions</h1><table><tr><th>#</th><th>Question</th><th>Default</th><th>Owner</th><th>Status</th></tr>';
+  for(const q of P.questions) h+='<tr><td><strong>'+esc(q.id)+'</strong></td><td>'+esc(q.title)+'</td><td>'+esc(q.default)+'</td><td>'+esc(q.owner)+'</td><td>'+badge(q.status)+'</td></tr>';
+  return h+'</table>'+answerForm(P.questions.map(q=>q.id));
+}
+function answerForm(ids){
+  const dis = WRITABLE ? '' : ' disabled';
+  return '<form class="answer" id="answerForm"><h3>Answer '+(WRITABLE?'':'<span class="note">(read-only view — open with a write key to answer here, or reply by sgit)</span>')+'</h3>'
+    +'<label>Item</label><select name="item"'+dis+'>'+ids.map(i=>'<option>'+esc(i)+'</option>').join('')+'</select>'
+    +'<label>From (your agent name)</label><input name="from" value="dinis.human"'+dis+'>'
+    +'<label>Answer</label><textarea name="body" placeholder="Your decision, and why."'+dis+'></textarea>'
+    +'<button type="submit"'+dis+'>Send to architect.villager</button> <span class="note" id="answerStatus"></span></form>';
+}
+function mailView(agent){
+  const a = P.agents.find(x=>x.id===agent); const m=MAIL[agent]; const is=ISSUES[agent];
+  let h='<h1>'+esc(a.label)+' <span class="note">'+esc(a.id)+'</span></h1><p>'+esc(a.scope)+'</p>';
+  const box=(title, arr, where)=>{ h+='<h2>'+title+' <span class="note">'+arr.length+'</span></h2>';
+    if(!arr.length){ h+='<p class="note">empty</p>'; return; }
+    for(const msg of arr){ const H=msg.headers;
+      h+='<div class="msg"><div class="hdr"><b>'+esc(H.from)+'</b> → '+esc(H.to)+' · '+esc(H['x-emailfs-kind'])+' · '+esc(H['x-emailfs-priority'])+' · '+esc(H.date)+'</div>'
+        +'<div class="subject">'+esc(H.subject)+'</div>'+md(msg.body)+'<div class="where">'+esc(msg.path)+'</div></div>'; } };
+  box('Mailroom (sent, not yet delivered)', m.mailroom);
+  box('Inbox', m.inbox); box('Done', m.done); box('Outbox (sent by '+esc(a.id)+')', m.outbox);
+  const iss=(title, arr)=>{ h+='<h2>Issues — '+title+' <span class="note">'+arr.length+'</span></h2>'; if(!arr.length){ h+='<p class="note">none</p>'; return; }
+    for(const it of arr) h+='<div class="msg"><div class="hdr">'+esc(it.fm.created||'')+' · priority <b>'+esc(it.fm.priority||'')+'</b>'+(it.fm.blocked_on?' · blocked on <b>'+esc(it.fm.blocked_on)+'</b>':'')+'</div>'+md(it.body)+'<div class="where">'+esc(it.path)+'</div></div>'; };
+  iss('open', is.open); iss('blocked', is.blocked); iss('done', is.done);
+  return h;
+}
+async function docView(path){ const t = await readText(path); return t ? md(t) : '<p>Could not read <code>'+esc(path)+'</code>.</p>'; }
+
+/* ---------- routing ---------- */
+const routes = { overview, decisions, questions };
+async function show(id){
+  const page=document.getElementById('page');
+  document.querySelectorAll('#nav a').forEach(a=>a.classList.toggle('active', a.dataset.id===id));
+  if(routes[id]) page.innerHTML = routes[id]();
+  else if(id.startsWith('agent:')) page.innerHTML = mailView(id.slice(6));
+  else if(id==='readme') page.innerHTML = await docView('README.md');
+  else if(id==='briefs') page.innerHTML = await docView('briefs/index.md');
+  else page.innerHTML = overview();
+  const form=document.getElementById('answerForm'); if(form) form.onsubmit = submitAnswer;
+}
+function buildNav(){
+  const nav=document.getElementById('nav'); nav.innerHTML='';
+  const mk=(id,title,n)=>{ const a=document.createElement('a'); a.href='#'+id; a.dataset.id=id;
+    a.innerHTML=esc(title)+(n!=null?'<span class="n">'+n+'</span>':''); a.onclick=e=>{ e.preventDefault(); show(id); }; nav.appendChild(a); };
+  const sec=t=>{ const d=document.createElement('div'); d.className='sec'; d.textContent=t; nav.appendChild(d); };
+  sec('Programme'); mk('overview','Overview'); mk('decisions','Decisions', P.decisions.filter(d=>d.status==='open').length); mk('questions','Questions', P.questions.filter(q=>q.status==='open').length);
+  sec('Agents'); for(const a of P.agents) mk('agent:'+a.id, a.id, MAIL[a.id].mailroom.length + MAIL[a.id].inbox.length);
+  sec('About'); mk('readme','How this vault works'); mk('briefs','Where the data lives');
+}
+
+/* ---------- the one write: an answer into the architect's mailroom ---------- */
+async function submitAnswer(e){
+  e.preventDefault(); const f=e.target; const status=document.getElementById('answerStatus');
+  const item=f.item.value, from=(f.from.value||'dinis.human').trim(), body=f.body.value.trim();
+  if(!body){ status.textContent='write something first'; return; }
+  const existing = (await list('mail/mailroom/architect.villager')).filter(x=>/\.eml$/.test(x.path)).length
+                 + (await list('mail/architect.villager/inbox')).filter(x=>/\.eml$/.test(x.path)).length
+                 + (await list('mail/architect.villager/done')).filter(x=>/\.eml$/.test(x.path)).length;
+  const n=String(existing+1).padStart(3,'0'); const slug='re-answer-'+item.toLowerCase();
+  const date=new Date().toUTCString();
+  const text=['From: '+from+' <'+from+'@vaults.sgit.ai>','To: architect.villager <architect.villager@vaults.sgit.ai>','Date: '+date,
+    'Subject: Re: '+item+' — answer','Message-ID: <'+n+'-'+slug+'@vaults.sgit.ai>','In-Reply-To: <001-decisions-d1-d10-and-questions@vaults.sgit.ai>',
+    'References: <001-decisions-d1-d10-and-questions@vaults.sgit.ai>','Content-Type: text/plain; charset=utf-8','X-EmailFS-Kind: reply','X-EmailFS-Priority: high','',
+    '**'+item+'**: '+body,''].join('\n');
+  try { const r = await sg.vfs.write('mail/mailroom/architect.villager/'+n+'-'+slug+'.eml', text);
+        status.textContent='sent — '+(r && r.published ? 'published' : 'committed locally; it publishes on the next push'); f.body.value='';
+        await loadAll(); buildNav(); }
+  catch(err){ status.textContent='could not write: '+(err && err.code || err); }
+}
+
+/* ---------- boot ---------- */
+(function boot(){ let tries=0; (function wait(){
+  if(hasSg() || tries++>40){
+    if(!hasSg()){ document.getElementById('page').innerHTML='<h1>vaults.sgit.ai — the programme</h1><p>This dashboard needs the vault bridge (<code>sg.vfs</code>). Open the vault in the vault web, or read the same files from the repository: <code>programme.json</code>, <code>mail/</code>, <code>issues/</code>.</p>'; document.getElementById('meta').textContent='no bridge'; return; }
+    loadAll().then(()=>{ document.getElementById('meta').textContent=(WRITABLE?'writable':'read-only')+' · '+P.updated; buildNav(); show(location.hash?location.hash.slice(1):'overview');
+      try { window.parent && window.parent.postMessage({type:'sg-app-ready'},'*'); } catch(e){} })
+      .catch(err=>{ document.getElementById('page').innerHTML='<p>Failed to load: '+esc(err && err.message || err)+'</p>'; });
+  } else setTimeout(wait,60);
+})(); })();
+</script>
+</body>
+</html>
