@@ -50,6 +50,7 @@ Code-verified conformance findings (2026-08-17, sgit-ai v0.15.0):
 
 | Item | Location | Notes |
 |---|---|---|
+| **AWS Lambda deploy lane** (dev / main / prod) | `.github/workflows/deploy-aws-lambda.yml` (+ `deploy-aws__{dev,main,prod}.yml`), `deploy/docker/{Dockerfile,serve.py}`, `deploy/aws/{lambda,github-oidc-role}.cfn.yml`, `deploy/aws/cloudfront_ensure_enabled.sh`, `tests/deploy/` | OIDC only; skips deploy until `AWS_DEPLOY_ROLE_ARN` is set. Image = API-only, serving the vault API from the pinned origin package until `sgit_vaults` exists. **Verified 4 Oct locally:** entrypoint boots, smoke 6/6 (3 UI tests skipped by design), parity gate 10/10 vs in-process; cfn-lint clean. **Never run against AWS yet** |
 | Base pipeline | `.github/workflows/ci-pipeline.yml` | `workflow_call`: run-tests → increment-tag; uses `owasp-sbot/OSBot-GitHub-Actions` actions |
 | Dev pipeline | `.github/workflows/ci-pipeline__dev.yml` | push to `dev` → tests + **minor** tag bump |
 | Main pipeline | `.github/workflows/ci-pipeline__main.yml` | push to `main` → tests + **major** tag bump |
@@ -77,7 +78,7 @@ existing tag** — the repo is seeded with `v0.1.0`.
 |---|---|
 | Any API endpoint (`/api/vault/*`, `/api/transfers/*`, `/api/info/*`, `/mcp`) | PROPOSED — the extraction from `SGraph-AI__App__Send` has not happened yet |
 | FastAPI app / Lambda handler / deploy scripts | PROPOSED — arrive with the extraction |
-| Deployment jobs in CI (Lambda, container, multi-region) | PROPOSED — CI currently only tests and tags |
+| Deployment jobs in CI (Lambda, container, multi-region) | Lambda lane EXISTS (above), unproven live; container targets / multi-region PROPOSED |
 | PyPI / Docker Hub publishing | PROPOSED |
 
 The live SGit API today is still served by the User Lambda deployed from

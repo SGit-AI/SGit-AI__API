@@ -1,0 +1,18 @@
+name: Deploy AWS — prod
+on:
+  workflow_dispatch:
+    inputs:
+      domain_name:     { description: 'Custom domain (e.g. vaults.sgit.ai); empty = Function URL only', required: false, default: '' }
+      hosted_zone_id:  { description: 'Route53 hosted zone id for the domain', required: false, default: '' }
+      certificate_arn: { description: 'ACM certificate ARN in us-east-1', required: false, default: '' }
+jobs:
+  prod:
+    uses: ./.github/workflows/deploy-aws-lambda.yml
+    with:
+      stage: prod
+      domain_name    : ${{ inputs.domain_name }}
+      hosted_zone_id : ${{ inputs.hosted_zone_id }}
+      certificate_arn: ${{ inputs.certificate_arn }}
+    secrets:
+      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      ACCESS_TOKEN       : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN__PROD }}

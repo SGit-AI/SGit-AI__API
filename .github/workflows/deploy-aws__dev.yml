@@ -1,0 +1,14 @@
+name: Deploy AWS — dev
+on:
+  push:
+    branches: [dev]
+    paths: ['sgit_ai_api/**', 'sgit_vaults/**', 'deploy/**', 'tests/**', 'pyproject.toml', '.github/workflows/deploy-aws*.yml']
+  workflow_dispatch:
+jobs:
+  dev:
+    uses: ./.github/workflows/deploy-aws-lambda.yml
+    with:
+      stage: dev
+    secrets:
+      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      ACCESS_TOKEN       : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN__DEV }}

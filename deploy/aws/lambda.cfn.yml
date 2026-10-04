@@ -1,0 +1,206 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  sgit vaults API as a Lambda container-image function with a public Function URL, one stack
+  per stage (dev / main / prod). Optional CloudFront + Route53 custom domain. Storage: S3
+  (default, durable) or memory (ephemeral). The access token is provided at deploy time and
+  never stored by the stack.
+
+Parameters:
+
+  ImageUri:
+    Type: String
+    Description: ECR image URI (must be in this account/region), e.g. 123456789012.dkr.ecr.eu-west-2.amazonaws.com/sgit-vaults-api:v0.1.7
+
+  Stage:
+    Type: String
+    Default: dev
+    AllowedValues: [dev, main, prod]
+    Description: Deployment stage — mirrors the origin repo's three User Lambdas (dev / main / prod)
+
+  MemorySize:
+    Type: Number
+    Default: 1024
+    MinValue: 128
+    MaxValue: 10240
+
+  Timeout:
+    Type: Number
+    Default: 30
+    MinValue: 3
+    MaxValue: 900
+
+  StorageMode:
+    Type: String
+    Default: s3
+    AllowedValues: [s3, memory]
+
+  ExistingBucket:
+    Type: String
+    Default: ''
+    Description: Optional existing S3 bucket (s3 mode). Empty = the stack creates {account}--sgit-vaults--{region}--{stage}.
+
+  AccessToken:
+    Type: String
+    Default: ''
+    NoEcho: true
+    Description: The deployment's access key. Gates writes (and all routes when SEND__ENABLE_AUTH). Empty = explicitly open instance.
+
+  DomainName:
+    Type: String
+    Default: ''
+    Description: Optional custom domain (requires HostedZoneId + CertificateArn), e.g. dev.vaults.sgit.ai
+
+  HostedZoneId:
+    Type: String
+    Default: ''
+
+  CertificateArn:
+    Type: String
+    Default: ''
+    Description: ACM certificate ARN for DomainName — MUST be in us-east-1 (CloudFront constraint)
+
+Conditions:
+  IsS3Mode:        !Equals [!Ref StorageMode, s3]
+  CreateBucket:    !And [!Condition IsS3Mode, !Equals [!Ref ExistingBucket, '']]
+  HasAccessToken:  !Not [!Equals [!Ref AccessToken, '']]
+  HasCustomDomain: !And
+    - !Not [!Equals [!Ref DomainName, '']]
+    - !Not [!Equals [!Ref HostedZoneId, '']]
+    - !Not [!Equals [!Ref CertificateArn, '']]
+
+Resources:
+
+  VaultsBucket:
+    Type: AWS::S3::Bucket
+    Condition: CreateBucket
+    DeletionPolicy: Retain
+    UpdateReplacePolicy: Retain
+    Properties:
+      BucketName: !Sub '${AWS::AccountId}--sgit-vaults--${AWS::Region}--${Stage}'
+      PublicAccessBlockConfiguration:
+        BlockPublicAcls: true
+        BlockPublicPolicy: true
+        IgnorePublicAcls: true
+        RestrictPublicBuckets: true
+      BucketEncryption:
+        ServerSideEncryptionConfiguration:
+          - ServerSideEncryptionByDefault:
+              SSEAlgorithm: AES256
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: !Sub 'sgit-vaults-lambda--${Stage}'
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal: { Service: lambda.amazonaws.com }
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+      Policies:
+        - !If
+          - IsS3Mode
+          - PolicyName: sgit-vaults-storage
+            PolicyDocument:
+              Version: '2012-10-17'
+              Statement:
+                - Effect: Allow
+                  Action: [s3:GetObject, s3:PutObject, s3:DeleteObject, s3:ListBucket, s3:GetBucketLocation]
+                  Resource:
+                    - !Sub
+                      - 'arn:aws:s3:::${BucketName}'
+                      - BucketName: !If [CreateBucket, !Sub '${AWS::AccountId}--sgit-vaults--${AWS::Region}--${Stage}', !Ref ExistingBucket]
+                    - !Sub
+                      - 'arn:aws:s3:::${BucketName}/*'
+                      - BucketName: !If [CreateBucket, !Sub '${AWS::AccountId}--sgit-vaults--${AWS::Region}--${Stage}', !Ref ExistingBucket]
+          - !Ref AWS::NoValue
+
+  VaultsFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: !Sub 'sgit-vaults-api--${Stage}'
+      PackageType: Image
+      Code: { ImageUri: !Ref ImageUri }
+      MemorySize: !Ref MemorySize
+      Timeout: !Ref Timeout
+      Architectures: [x86_64]
+      Role: !GetAtt ExecutionRole.Arn
+      Environment:
+        Variables:
+          SEND__STORAGE_MODE: !Ref StorageMode
+          SEND__S3_BUCKET: !If
+            - IsS3Mode
+            - !If [CreateBucket, !Sub '${AWS::AccountId}--sgit-vaults--${AWS::Region}--${Stage}', !Ref ExistingBucket]
+            - !Ref AWS::NoValue
+          SEND__STORAGE_BASE: 'sgit-vaults'
+          SEND__STORAGE_VERSION: 'v1'
+          SEND__DEPLOYMENT_ID: !Ref Stage
+          SGRAPH_SEND__ACCESS_TOKEN: !If [HasAccessToken, !Ref AccessToken, !Ref AWS::NoValue]
+
+  FunctionUrl:
+    Type: AWS::Lambda::Url
+    Properties:
+      TargetFunctionArn: !GetAtt VaultsFunction.Arn
+      AuthType: NONE
+      InvokeMode: BUFFERED
+
+  FunctionUrlPublicAccess:
+    Type: AWS::Lambda::Permission
+    Properties:
+      FunctionName: !GetAtt VaultsFunction.Arn
+      Action: lambda:InvokeFunctionUrl
+      Principal: '*'
+      FunctionUrlAuthType: NONE
+
+  Distribution:
+    Type: AWS::CloudFront::Distribution
+    Condition: HasCustomDomain
+    Properties:
+      DistributionConfig:
+        Enabled: true
+        Comment: !Sub 'sgit vaults API ${Stage} — Function URL origin'
+        Aliases: [!Ref DomainName]
+        ViewerCertificate:
+          AcmCertificateArn: !Ref CertificateArn
+          SslSupportMethod: sni-only
+          MinimumProtocolVersion: TLSv1.2_2021
+        Origins:
+          - Id: function-url
+            DomainName: !Select [2, !Split ['/', !GetAtt FunctionUrl.FunctionUrl]]
+            CustomOriginConfig:
+              OriginProtocolPolicy: https-only
+              OriginSSLProtocols: [TLSv1.2]
+        # No CustomErrorResponses on purpose: the edge must pass API status codes through
+        # unchanged (the origin repo's distribution rewrote 403 -> 404.html; pack Q11).
+        DefaultCacheBehavior:
+          TargetOriginId: function-url
+          ViewerProtocolPolicy: redirect-to-https
+          AllowedMethods: [GET, HEAD, OPTIONS, PUT, POST, PATCH, DELETE]
+          CachePolicyId: 4135ea2d-6df8-44a3-9df3-4b5a84be39ad          # CachingDisabled (managed)
+          OriginRequestPolicyId: b689b0a8-53d0-40ab-baf2-68738e2966ac  # AllViewerExceptHostHeader (managed)
+
+  DnsRecord:
+    Type: AWS::Route53::RecordSet
+    Condition: HasCustomDomain
+    Properties:
+      HostedZoneId: !Ref HostedZoneId
+      Name: !Ref DomainName
+      Type: A
+      AliasTarget:
+        DNSName: !GetAtt Distribution.DomainName
+        HostedZoneId: Z2FDTNDATAQYW2
+
+Outputs:
+  FunctionUrl:
+    Value: !GetAtt FunctionUrl.FunctionUrl
+  PublicUrl:
+    Value: !If [HasCustomDomain, !Sub 'https://${DomainName}/', !GetAtt FunctionUrl.FunctionUrl]
+  DistributionId:
+    Value: !If [HasCustomDomain, !Ref Distribution, '']
+  StorageBucket:
+    Value: !If
+      - IsS3Mode
+      - !If [CreateBucket, !Sub '${AWS::AccountId}--sgit-vaults--${AWS::Region}--${Stage}', !Ref ExistingBucket]
+      - '(memory mode — no bucket)'

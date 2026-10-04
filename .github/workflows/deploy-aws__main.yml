@@ -1,0 +1,13 @@
+name: Deploy AWS — main
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+jobs:
+  main:
+    uses: ./.github/workflows/deploy-aws-lambda.yml
+    with:
+      stage: main
+    secrets:
+      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      ACCESS_TOKEN       : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN__MAIN }}

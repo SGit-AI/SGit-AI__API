@@ -1,0 +1,117 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: >-
+  One-time bootstrap: the GitHub OIDC identity provider + the least-privilege role that this
+  repository's deploy workflows assume. No long-lived AWS keys anywhere. Deploy ONCE per
+  account with admin credentials, then set the RoleArn output as the AWS_DEPLOY_ROLE_ARN
+  GitHub Actions secret.
+
+Parameters:
+
+  GitHubOrg:
+    Type: String
+    Default: SGit-AI
+
+  GitHubRepo:
+    Type: String
+    Default: SGit-AI__API
+
+  CreateOidcProvider:
+    Type: String
+    Default: 'true'
+    AllowedValues: ['true', 'false']
+    Description: Set false if the account already has the token.actions.githubusercontent.com provider (one per account).
+
+Conditions:
+  MakeProvider: !Equals [!Ref CreateOidcProvider, 'true']
+
+Resources:
+
+  GitHubOidcProvider:
+    Type: AWS::IAM::OIDCProvider
+    Condition: MakeProvider
+    Properties:
+      Url: https://token.actions.githubusercontent.com
+      ClientIdList: [sts.amazonaws.com]
+      ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
+
+  DeployRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: sgit-vaults-github-deploy
+      MaxSessionDuration: 3600
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !If
+                - MakeProvider
+                - !Ref GitHubOidcProvider
+                - !Sub 'arn:aws:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com'
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+              # Only these refs/environments of this one repository may assume the role:
+              # dev and main branches (push), and the "prod" GitHub Environment (manual, approved).
+              StringLike:
+                token.actions.githubusercontent.com:sub:
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/dev'
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/main'
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:prod'
+      Policies:
+        - PolicyName: sgit-vaults-deploy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              # the three stage stacks and the bootstrap stack itself
+              - Sid: Stacks
+                Effect: Allow
+                Action: [cloudformation:*]
+                Resource: !Sub 'arn:aws:cloudformation:*:${AWS::AccountId}:stack/sgit-vaults-*/*'
+              # the function, its URL and its logs
+              - Sid: LambdaAndLogs
+                Effect: Allow
+                Action: [lambda:*, logs:*]
+                Resource:
+                  - !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:sgit-vaults-*'
+                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-*'
+                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-*:*'
+              # the image registry (one repository) + the auth token call, which is resource-less
+              - Sid: Ecr
+                Effect: Allow
+                Action: [ecr:*]
+                Resource: !Sub 'arn:aws:ecr:*:${AWS::AccountId}:repository/sgit-vaults-api'
+              - Sid: EcrAuth
+                Effect: Allow
+                Action: [ecr:GetAuthorizationToken, ecr:DescribeRepositories]
+                Resource: '*'
+              # the per-stage data buckets (create, configure; objects stay the function's business)
+              - Sid: Buckets
+                Effect: Allow
+                Action: [s3:CreateBucket, s3:DeleteBucket, s3:Get*, s3:List*, s3:Put*]
+                Resource:
+                  - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*'
+                  - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*/*'
+              # the function's execution role (create/attach/pass), nothing else in IAM
+              - Sid: ExecutionRole
+                Effect: Allow
+                Action: [iam:CreateRole, iam:DeleteRole, iam:GetRole, iam:PassRole, iam:UpdateRole,
+                         iam:PutRolePolicy, iam:DeleteRolePolicy, iam:GetRolePolicy,
+                         iam:AttachRolePolicy, iam:DetachRolePolicy, iam:TagRole, iam:UntagRole]
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-*'
+              # CloudFront + Route53 for the optional custom domain, and the "is the distribution
+              # enabled" check step. CloudFront has no resource-level scoping for most calls.
+              - Sid: Edge
+                Effect: Allow
+                Action: [cloudfront:*, route53:ChangeResourceRecordSets, route53:GetChange, route53:ListResourceRecordSets, route53:ListHostedZones, acm:ListCertificates, acm:DescribeCertificate]
+                Resource: '*'
+              - Sid: Identity
+                Effect: Allow
+                Action: [sts:GetCallerIdentity]
+                Resource: '*'
+
+Outputs:
+  RoleArn:
+    Description: Set this as the AWS_DEPLOY_ROLE_ARN GitHub Actions secret
+    Value: !GetAtt DeployRole.Arn
