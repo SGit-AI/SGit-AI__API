@@ -1,0 +1,953 @@
+[
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%23public-preview-early-access-info::sgraph_ai_app_send%2Flambda__user%2Fservice%2FPublic_Preview__Service.py%23fetch_preview::sgraph_ai_app_send%2Flambda__user%2Fservice%2FPublic_Preview__Service.py%2BService__Early_Access.py::ATTACK-CLASSES.md%23Injection",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes#public-preview-early-access-info",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py#fetch_preview",
+      "subsystem": "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py+Service__Early_Access.py",
+      "attack_class": "ATTACK-CLASSES.md#Injection"
+    },
+    "surface": "/api/public-preview/*, /api/early-access/signup, /api/info/*",
+    "boundary": "Anonymous surfaces: origin content, outbound email, CPU",
+    "subsystem": "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service+Early_Access",
+    "attack_class": "Injection / resource exhaustion on anonymous routes",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Public_Preview.py",
+      "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Early_Access.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Early_Access.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Info__SGraph.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Pre-authentication work imbalance",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "WEB-PROTOCOL-AND-AUTH.md#Host and forwarded-header trust"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "server-served content type is in scope via Injection; browser UI out of scope"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h6",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Early_Access.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Info__SGraph.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Public_Preview.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Early_Access.py",
+      "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Early_Access.py",
+      "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h6",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Public_Preview.py",
+          "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py",
+          "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py"
+        ],
+        "invariant": "Preview responses cannot carry an author-chosen active Content-Type",
+        "method": "source",
+        "result": "Violated in source: data-URL media type passed to Response(media_type); origin topology/headers not observable -> needs_validation.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h6",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Public_Preview.py",
+          "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py"
+        ],
+        "invariant": "No expensive crypto before existence/rate gates on anonymous routes",
+        "method": "source",
+        "result": "info runs PBKDF2 600k unconditionally (twice on hit); upstream limits unknown -> needs_validation.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h6",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Public_Preview__Service.py"
+        ],
+        "invariant": "OG HTML escapes all controlled values",
+        "method": "source",
+        "result": "Holds (html.escape; int-coerced dims).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h6",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Early_Access.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Early_Access.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Early_Access.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py"
+        ],
+        "invariant": "Signup input encoded; no unbounded outbound fan-out",
+        "method": "source",
+        "result": "Raw name/email/locale into HTML email; two webhook calls per anonymous request; rendering/quota external -> needs_validation.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h6",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Info__SGraph.py",
+          "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py"
+        ],
+        "invariant": "Info/handler expose no injectable sinks",
+        "method": "source",
+        "result": "Holds; version disclosure and init-error echo are hardening.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "Public_Preview__Service.thumbnail_bytes:data-url-media-type-reflected",
+      "Routes__Public_Preview.info__public_id:unconditional-pbkdf2-600k",
+      "Service__Early_Access.build_email_body:unescaped-html-and-locale",
+      "Service__Early_Access.send_notification:unthrottled-anonymous-webhook-fanout"
+    ],
+    "unresolved": [],
+    "x_label": "A6",
+    "x_hardening": [
+      "last_timings shared across requests; debug print of public_id to logs.",
+      "og:image built from Host/x-forwarded-proto (escaped; cache-key risk).",
+      "Anonymous preview views mutate transfer state (download_count, events, auto-delete).",
+      "/api/info/versions discloses dependency versions; handler echoes init exception.",
+      "thumbnail media type regex allows CR/LF."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%23vault-presigned-and-append::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Vault__Presigned.py%23_validate_write_key::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Vault__Presigned.py%2BService__Vault__Append.py::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes#vault-presigned-and-append",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py#_validate_write_key",
+      "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py+Service__Vault__Append.py",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "/api/vault/presigned/* and /api/vault/append/*",
+    "boundary": "Write-key / append-anchor / enum-key binding",
+    "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned+Append",
+    "attack_class": "Access control: presigned and append lanes",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append_Token.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append__File_Id.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Stale authorization and derived copy use",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "file_id key composition owned by A3"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h5",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append_Token.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append__File_Id.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h5",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+        ],
+        "invariant": "Presigned ops check the same write key as /api/vault/write for the key they sign",
+        "method": "source",
+        "result": "Holds for claimed vaults; unclaimed vault accepted without _ensure_manifest (no stronger than write route). read-url anonymous by design.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h5",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append_Token.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Safe_Str__Vault__Append__File_Id.py"
+        ],
+        "invariant": "Append gates bound to anchor/enum/write key; ids confined",
+        "method": "source",
+        "result": "Gates correct per op; but manifest/config cached per process with no invalidation -> candidate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h5",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py"
+        ],
+        "invariant": "Destroy invalidates every auth cache other lanes consult",
+        "method": "source",
+        "result": "Violated: append_service and vault_service hold separate caches; delete_vault updates only its own.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py:_load_manifest+_load_append_config:uninvalidated-auth-cache"
+    ],
+    "unresolved": [],
+    "x_label": "A5",
+    "x_hardening": [
+      "Presigned initiate/complete on unclaimed vault never calls _ensure_manifest.",
+      "Presigned lane validates only private-bucket manifest; public vault ids look unclaimed.",
+      "configure stores append_anchors without type validation (string -> substring test; owner-only).",
+      "read-url signs GETs for destroyed vault ids."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%23x-sgraph-access-token::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Access_Token.py%23check_access_token::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Access_Token.py::ATTACK-CLASSES.md%23Access%20control",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes#x-sgraph-access-token",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Service__Access_Token.py#check_access_token",
+      "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Access_Token.py",
+      "attack_class": "ATTACK-CLASSES.md#Access control"
+    },
+    "surface": "All token-gated routes (transfers, presigned, vault, append)",
+    "boundary": "Access-token gate (4 copies) + admin token lookup",
+    "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Access_Token",
+    "attack_class": "Access control: auth bypass / API-key scope",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/service/Service__Access_Token.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client.py",
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client__Setup.py",
+      "sgraph_ai_app_send/lambda__user/user__config.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "WEB-PROTOCOL-AND-AUTH.md#Core discipline",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+      "WEB-PROTOCOL-AND-AUTH.md#API-key exposure and unsafe transport",
+      "WEB-PROTOCOL-AND-AUTH.md#Universal moves",
+      "WEB-PROTOCOL-AND-AUTH.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#Ordinary CSRF",
+        "reason": "no ambient cookie credentials; header tokens only"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h1",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__admin/fast_api/routes/Routes__Data_Room.py",
+      "sgraph_ai_app_send/lambda__admin/service/Service__Data_Room.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client.py",
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client__Requests.py",
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client__Setup.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Access_Token.py",
+      "sgraph_ai_app_send/lambda__user/user__config.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h1",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Access_Token.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py"
+        ],
+        "invariant": "Four gate copies apply the same decision and normalisation",
+        "method": "source",
+        "result": "Admin-mode logic equivalent; only Routes__Transfers sanitises with Safe_Str__Id; others send raw header to token_lookup. Positive cache 60s (documented).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h1",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client.py",
+          "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client__Requests.py",
+          "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client__Setup.py",
+          "sgraph_ai_app_send/lambda__admin/fast_api/routes/Routes__Data_Room.py",
+          "sgraph_ai_app_send/lambda__admin/service/Service__Data_Room.py"
+        ],
+        "invariant": "Token lookup cannot be steered to other admin GET resources",
+        "method": "source",
+        "result": "Raw token interpolated into /tokens/lookup/{token}; gate accepts any status=='active' JSON; /rooms/lookup returns status active. Dot-segment resolution in osbot-fast-api REMOTE client not observable -> needs_validation.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h1",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+          "sgraph_ai_app_send/lambda__user/user__config.py"
+        ],
+        "invariant": "Fail-open only as explicit operator choice",
+        "method": "source",
+        "result": "Fail-open when no admin client and empty env token; documented open mode; setup exceptions silently drop to env mode. Hardening (deployment-intent dependent; downstream covered in SGit-AI__API run).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h1",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py"
+        ],
+        "invariant": "Token usage limits enforced on metered paths",
+        "method": "source",
+        "result": "token_use after complete, result ignored, non-atomic; vault routes do not meter (by design). Hardening.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/lambda__user/service/Admin__Service__Client.py:token_lookup:unsanitized-token-in-admin-path"
+    ],
+    "unresolved": [],
+    "x_label": "A1",
+    "x_hardening": [
+      "Fail-open token gate when no admin URL and empty env token; require explicit SEND__OPEN_INSTANCE=true.",
+      "Consolidate four gate copies; validate/URL-quote token; require response token_name == presented token.",
+      "Token accepted via ?access_token= query param (logs).",
+      "Env token compare uses != (use hmac.compare_digest).",
+      "token_use after completion, result ignored, non-atomic.",
+      "Anonymous check-token oracle, no rate limit.",
+      "60s positive token cache keeps revoked tokens alive."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%2FRoutes__Transfers.py%23transfers-and-presigned::sgraph_ai_app_send%2Flambda__user%2Fservice%2FTransfer__Service.py%23get_download_payload::sgraph_ai_app_send%2Flambda__user%2Fservice%2FTransfer__Service.py::DATA-ISOLATION-AND-LIFECYCLE.md%23Blob%20and%20signed-reference%20overreach",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py#transfers-and-presigned",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py#get_download_payload",
+      "subsystem": "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+      "attack_class": "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach"
+    },
+    "surface": "/api/transfers/* and /api/presigned/*",
+    "boundary": "Transfer lifecycle (status, expiry, max_downloads, delete-auth)",
+    "subsystem": "sgraph_ai_app_send/lambda__user/service/Transfer__Service",
+    "attack_class": "Business logic: lifecycle and parallel-path bypass",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Transfer.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Presigned.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Soft-delete and tombstone bypass",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "token gate owned by A1"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h4",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Transfer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+      "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+      "sgraph_ai_app_send/lambda__user/storage/Send__Config.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage_FS__S3.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h4",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py"
+        ],
+        "invariant": "Direct download enforces all lifecycle predicates",
+        "method": "source",
+        "result": "Enforced, but read-modify-write of download_count is non-atomic.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h4",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py"
+        ],
+        "invariant": "Presigned download applies the same lifecycle predicates",
+        "method": "source",
+        "result": "Violated: status only; no expiry/max_downloads/auto_delete; unauthenticated; S3-mode dependent.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h4",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+          "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py"
+        ],
+        "invariant": "Payload writes only while pending",
+        "method": "source",
+        "result": "Violated: create_upload_url checks only existence; complete_transfer has no status predicate (resurrection).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h4",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Transfer.py"
+        ],
+        "invariant": "Delete-auth + tombstone",
+        "method": "source",
+        "result": "Holds on direct paths.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h4",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage_FS__S3.py",
+          "sgraph_ai_app_send/lambda__user/storage/Send__Config.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Presigned.py"
+        ],
+        "invariant": "Presigned key equals Storage_FS payload key",
+        "method": "source",
+        "result": "Holds (no s3_prefix).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py:create_download_url:lifecycle-predicates-omitted",
+      "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py:create_upload_url:missing-pending-state-check",
+      "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py:get_download_payload:non-atomic-download-count"
+    ],
+    "unresolved": [],
+    "x_label": "A4",
+    "x_hardening": [
+      "delete_transfer hash compare with != (use hmac.compare_digest).",
+      "cancel_multipart_upload 500 on unknown transfer_id.",
+      "complete_multipart_upload lacks pending re-check (same root as create_upload_url).",
+      "create_transfer accepts arbitrary expires_at/content_type_hint."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%2FRoutes__Vault__Pointer.py%23file_id-prefix::sgraph_ai_app_send%2Flambda__user%2Fstorage%2FStorage__Paths.py%23vault_file::sgraph_ai_app_send%2Flambda__user%2Fstorage::ATTACK-CLASSES.md%23Resource%20and%20file%20handling",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py#file_id-prefix",
+      "boundary": "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py#vault_file",
+      "subsystem": "sgraph_ai_app_send/lambda__user/storage",
+      "attack_class": "ATTACK-CLASSES.md#Resource and file handling"
+    },
+    "surface": "file_id path param, batch file_id, list prefix, zip entries",
+    "boundary": "Vault namespace isolation in storage keys",
+    "subsystem": "sgraph_ai_app_send/lambda__user/storage",
+    "attack_class": "Resource and file handling: path traversal / namespace collision / zip",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage_FS__S3.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage_FS__Local_Disk.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Zip.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Resource and file handling",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Composite-key and namespace collision",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+        "reason": "owned by A2"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h3",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Zip.py",
+      "sgraph_ai_app_send/lambda__user/storage/Send__Config.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage_FS__Local_Disk.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage_FS__S3.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h3",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+        ],
+        "invariant": "file_id confined to the vault prefix before key composition",
+        "method": "source",
+        "result": "No validation; path__vault_payload interpolates file_id verbatim; stdlib fixture shows '../../../transfers/..' normalises to a transfer key. Resolution depends on Memory-FS/Safe_Str__File__Path (not installed).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h3",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/storage/Storage_FS__S3.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage_FS__Local_Disk.py",
+          "sgraph_ai_app_send/lambda__user/storage/Send__Config.py"
+        ],
+        "invariant": "Backends do not resolve dot-segments across namespaces",
+        "method": "source",
+        "result": "S3 literal key (likely safe); DISK delegates to upstream memory_fs (not in-repo): unresolved.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h3",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py"
+        ],
+        "invariant": "Sibling control equivalence",
+        "method": "source",
+        "result": "Append uses Safe_Str typed ids with traversal tests; pointer has none.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h3",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py"
+        ],
+        "invariant": "list prefix cannot enumerate outside vault",
+        "method": "source",
+        "result": "Holds: startswith(vault_prefix) filter.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h3",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Zip.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+        ],
+        "invariant": "Zip cache scoped to vault and current",
+        "method": "source",
+        "result": "Vault-scoped; stale-on-same-size and raw entry names affect owner only (hardening).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py:path__vault_payload:file_id-dot-segment-traversal"
+    ],
+    "unresolved": [],
+    "x_label": "A3",
+    "x_hardening": [
+      "Zip cache keyed on file_id:size only (stale zip).",
+      "Zip entries use raw file_ids (zip-slip for extracting clients).",
+      "Zip build unbounded in memory.",
+      "Add one file_id validator mirroring Safe_Str__Vault__Append__File_Id."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%2FRoutes__Vault__Pointer.py%23write-delete-batch-destroy::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Vault__Pointer.py%23_check_write_key::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Vault__Pointer.py::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py#write-delete-batch-destroy",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py#_check_write_key",
+      "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "PUT/DELETE /api/vault/write|delete|batch|destroy",
+    "boundary": "Vault manifest write-key ownership",
+    "subsystem": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer",
+    "attack_class": "Business logic: ownership claim, CAS, cache, destroy lifecycle",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Soft-delete and tombstone bypass",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Stale authorization and derived copy use",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "DATA-ISOLATION-AND-LIFECYCLE.md#Composite-key and namespace collision",
+        "reason": "owned by A3"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h2",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py",
+      "tests/unit/lambda__user/fast_api/routes/test_Routes__Vault__Pointer.py",
+      "tests/unit/lambda__user/service/test_Service__Vault__Pointer.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h2",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py"
+        ],
+        "invariant": "Mutating routes require token + write key matching manifest; first write claims; tombstone blocks",
+        "method": "source",
+        "result": "Holds per process; cross-process first-write is non-atomic (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h2",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+          "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py",
+          "tests/unit/lambda__user/fast_api/routes/test_Routes__Vault__Pointer.py",
+          "tests/unit/lambda__user/service/test_Service__Vault__Pointer.py"
+        ],
+        "invariant": "Destroy revokes the old write key everywhere authorization is cached",
+        "method": "source",
+        "result": "Violated: manifest cache never revalidated; delete_vault updates only the local process cache.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h2",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Append.py"
+        ],
+        "invariant": "Sibling-service auth caches invalidated on destroy",
+        "method": "source",
+        "result": "Violated: Append caches untouched by destroy (consolidated with A5 fingerprint).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py:_load_manifest:manifest-cache-never-revalidated",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Append.py:_load_manifest+_load_append_config:uninvalidated-auth-cache"
+    ],
+    "unresolved": [],
+    "x_label": "A2",
+    "x_hardening": [
+      "Public-vault destroy also deletes the private vault's cached zip for the same id.",
+      "delete_vault on a never-claimed id writes a permanent tombstone (squatting with prior id knowledge).",
+      "delete_vault deletes manifest before writing the tombstone; write tombstone first.",
+      "First-write-wins claim has no conditional put across processes."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__user%2Ffast_api%2Froutes%2FRoutes__Vault__Pointer.py%23x-vault-public-lane%2Bpublic-info::sgraph_ai_app_send%2Flambda__user%2Fservice%2FService__Vault__Pointer.py%23ensure_public_vault_json::sgraph_ai_app_send%2Flambda__user%2Fstorage%2FSend__Config.py%23public-vault-backend::ATTACK-CLASSES.md%23Business%20logic",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py#x-vault-public-lane+public-info",
+      "boundary": "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py#ensure_public_vault_json",
+      "subsystem": "sgraph_ai_app_send/lambda__user/storage/Send__Config.py#public-vault-backend",
+      "attack_class": "ATTACK-CLASSES.md#Business logic"
+    },
+    "surface": "X-Vault-Public lane on /api/vault/* plus anonymous /api/vault/public-info",
+    "boundary": "Public-bucket vault ownership and public-vault.json publication",
+    "subsystem": "sgraph_ai_app_send/lambda__user/storage/Send__Config.py#public-vault-backend",
+    "attack_class": "Business logic: cross-namespace ownership, public-identity squatting, stale public-vault.json",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/storage/Storage__Paths.py",
+      "sgraph_ai_app_send/lambda__user/storage/Send__Config.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Core discipline",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Missing tenant or owner enforcement",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Composite-key and namespace collision",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Soft-delete and tombstone bypass",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Universal moves",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "owned by A3"
+      },
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "owned by A1"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 3,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "budget_cannot_reserve_critics_and_validation"
+    ],
+    "x_label": "A9"
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Flambda__userfast_api%2Froutes%23presigned-multipart-initiate-complete-cancel::sgraph_ai_app_send%2Flambda__userservice%2FService__Vault__Presigned.py%23initiate_upload-size-binding::sgraph_ai_app_send%2Flambda__userservice%2FService__Vault__Presigned%2BService__Presigned_Urls::RESOURCE-EXHAUSTION-AND-AVAILABILITY.md%23Unbounded%20buffering%20and%20cardinality",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/lambda__userfast_api/routes#presigned-multipart-initiate-complete-cancel",
+      "boundary": "sgraph_ai_app_send/lambda__userservice/Service__Vault__Presigned.py#initiate_upload-size-binding",
+      "subsystem": "sgraph_ai_app_send/lambda__userservice/Service__Vault__Presigned+Service__Presigned_Urls",
+      "attack_class": "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality"
+    },
+    "surface": "POST /api/vault/presigned/* and /api/presigned/* multipart lanes",
+    "boundary": "Operator spend / storage limits: declared size and parts vs what S3 receives",
+    "subsystem": "sgraph_ai_app_send/lambda__userservice/Service__Vault__Presigned+Service__Presigned_Urls",
+    "attack_class": "Resource exhaustion: presigned multipart signing, size binding, orphaned uploads",
+    "starting_paths": [
+      "sgraph_ai_app_send/lambda__userservice/Service__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__userservice/Service__Presigned_Urls.py",
+      "sgraph_ai_app_send/lambda__userfast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__userfast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__userschemas/Schema__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__userschemas/Schema__Presigned.py",
+      "sgraph_ai_app_send/lambda__userfast_api/Fast_API__SGraph__App__Send__User.py"
+    ],
+    "ordinary_attack_class_block": null,
+    "selected_companion_blocks": [
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Core discipline",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Unbounded buffering and cardinality",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Universal moves",
+      "RESOURCE-EXHAUSTION-AND-AVAILABILITY.md#Validation rules",
+      "DATA-ISOLATION-AND-LIFECYCLE.md#Blob and signed-reference overreach"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "token gate owned by A1; precondition only"
+      },
+      {
+        "block": "ATTACK-CLASSES.md#Resource and file handling",
+        "reason": "file_id traversal in Service__Vault__Presigned.s3_key is a variant of the A3 fingerprint"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 2,
+    "status": "candidate",
+    "agent_id": "a-h8",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py",
+      "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py",
+      "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h8",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/service/Service__Vault__Pointer.py"
+        ],
+        "invariant": "Vault multipart binds declared size/quota and cleans orphaned uploads",
+        "method": "source",
+        "result": "No max, no ContentLength in presign, no assembled-size check, no abort lifecycle in source; unclaimed vaults accept any key.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h8",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/service/Service__Presigned_Urls.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/schemas/Schema__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/service/Transfer__Service.py"
+        ],
+        "invariant": "Transfer presigned lanes bind stored size and enforce limits",
+        "method": "source",
+        "result": "Same root cause on transfer lane; complete does not compare upload_id or size to meta.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h8",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Vault__Presigned.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Presigned.py"
+        ],
+        "invariant": "Presigned lanes reachable only by metered authenticated principals",
+        "method": "source",
+        "result": "Token lookup only, no usage consumption; fail-open when unconfigured (precondition only).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "presigned-multipart-declared-size-unbound:Service__Vault__Presigned.initiate_upload+Service__Presigned_Urls.initiate_multipart_upload"
+    ],
+    "unresolved": [],
+    "x_label": "A8",
+    "x_hardening": [
+      "num_parts up to 10000 means 10000 presigns and a multi-MB response that may exceed the Lambda response limit after create_multipart_upload ran (orphan).",
+      "complete_* accept unbounded plain-list parts; KeyError -> 500.",
+      "Presigned lanes never consume token usage."
+    ]
+  },
+  {
+    "coverage_id": "sgraph_ai_app_send%2Futils%2FMCP__Setup.py%23mcp-mount::sgraph_ai_app_send%2F_for_osbot_aws%2FLambda__Dependencies__Loader.py%23load::sgraph_ai_app_send%2Futils%2B_for_osbot_aws::AI-AND-LLM.md%23Sub-agent%20and%20MCP%20trust%20inheritance",
+    "canonical_refs": {
+      "surface": "sgraph_ai_app_send/utils/MCP__Setup.py#mcp-mount",
+      "boundary": "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Loader.py#load",
+      "subsystem": "sgraph_ai_app_send/utils+_for_osbot_aws",
+      "attack_class": "AI-AND-LLM.md#Sub-agent and MCP trust inheritance"
+    },
+    "surface": "/mcp mount and Lambda cold start",
+    "boundary": "MCP tool exposure + dependency-zip code integrity",
+    "subsystem": "sgraph_ai_app_send/utils+_for_osbot_aws",
+    "attack_class": "MCP trust / mutable build inputs",
+    "starting_paths": [
+      "sgraph_ai_app_send/utils/MCP__Setup.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Loader.py",
+      "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Builder.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/deploy/Deploy__Service.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Chained vulnerabilities and trust boundaries",
+    "selected_companion_blocks": [
+      "AI-AND-LLM.md#Core discipline",
+      "AI-AND-LLM.md#Sub-agent and MCP trust inheritance",
+      "AI-AND-LLM.md#Excessive agency and confused-deputy authority",
+      "AI-AND-LLM.md#Universal moves",
+      "AI-AND-LLM.md#Validation rules",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "AI-AND-LLM.md#Indirect injection through retrieved or ingested content",
+        "reason": "server does not run a model"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "a-h7",
+    "reviewed_paths": [
+      "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Builder.py",
+      "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Loader.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+      "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/deploy/Deploy__Service.py",
+      "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py",
+      "sgraph_ai_app_send/lambda__user/user__config.py",
+      "sgraph_ai_app_send/utils/MCP__Setup.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "a-h7",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/utils/MCP__Setup.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/Fast_API__SGraph__App__Send__User.py",
+          "sgraph_ai_app_send/lambda__user/fast_api/routes/Routes__Transfers.py"
+        ],
+        "invariant": "MCP tools give no more authority than direct routes",
+        "method": "source",
+        "result": "Holds: only caller headers forwarded (authorization, x-sgraph-access-token), handler checks re-run; write key not forwarded (less authority). Assumes fastapi-mcp in-process HTTP dispatch.",
+        "artifact": null
+      },
+      {
+        "agent_id": "a-h7",
+        "reviewed_paths": [
+          "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Loader.py",
+          "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Builder.py",
+          "sgraph_ai_app_send/lambda__user/lambda_function/lambda_handler__user.py",
+          "sgraph_ai_app_send/lambda__user/lambda_function/deploy/Deploy__Service.py",
+          "sgraph_ai_app_send/lambda__user/user__config.py"
+        ],
+        "invariant": "Cold-start code bound to a reviewed identity",
+        "method": "source",
+        "result": "Violated in source: S3 zip at predictable bucket/key, no ExpectedBucketOwner/digest, extractall + sys.path[0]; who can write the key is deployment config -> needs_validation.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "sgraph_ai_app_send/_for_osbot_aws/Lambda__Dependencies__Loader.py:load:unverified-s3-dependency-zip"
+    ],
+    "unresolved": [],
+    "x_label": "A7",
+    "x_hardening": [
+      "Loader trusts an existing /tmp folder without completion marker.",
+      "Combined-zip key hashes package specs only; builder no --require-hashes and skip-if-exists freezes first upload.",
+      "Builder targets cp313/x86_64 vs 3.12/arm64 guidance.",
+      "MCP calls likely record transport IP in ip_hash (audit only).",
+      "/mcp unauthenticated; DNS-rebinding/Origin protection depends on fastapi-mcp defaults."
+    ]
+  }
+]

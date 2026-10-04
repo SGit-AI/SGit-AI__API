@@ -1,0 +1,432 @@
+[
+ {
+  "verdict": "confirmed",
+  "fingerprint": "deploy/aws/github-oidc-role.cfn.yml:DeployRole:iam-self-escalation-via-sgit-vaults-role-wildcard",
+  "title": "GitHub OIDC deploy role can rewrite its own IAM permissions (role/sgit-vaults-* matches sgit-vaults-github-deploy), so any job in the dev/main/prod environment can become AWS account admin",
+  "description": "The bootstrap template grants the GitHub OIDC deploy role iam:PutRolePolicy, iam:AttachRolePolicy, iam:CreateRole, iam:PassRole and related actions on arn:aws:iam::<account>:role/sgit-vaults-* with no Condition (no iam:PolicyARN, iam:PermissionsBoundary or iam:PassedToService), and DeployRole has no PermissionsBoundary. The role is named sgit-vaults-github-deploy, which matches that wildcard, so a session of the role can attach AdministratorAccess (or put an Action '*' Resource '*' inline policy) to itself and its next session is account admin. A second route exists even if the self-match is removed: write an admin policy onto the Lambda execution role sgit-vaults-lambda--<stage> (or a new sgit-vaults-* role), pass it to a sgit-vaults-* function via lambda:*, and run code as it. The trust policy accepts any token whose sub is repo:SGit-AI/SGit-AI__API:environment:{dev,main,prod}; the dev environment is auto-created with no protection visible in source, so anyone who can get a job to run in environment dev (a repo writer pushing to dev, dispatching, or adding a workflow on any branch that declares environment: dev) can escalate. The documented intent is that the role 'cannot touch any resource not named sgit-vaults-*'.",
+  "root_cause": "Sid ExecutionRole scopes IAM write and pass actions only by the name prefix role/sgit-vaults-*, which also covers the deploy role itself (RoleName sgit-vaults-github-deploy). There are no conditions limiting which policies can be attached or inlined, no permissions boundary on created/modified roles or on DeployRole, and no iam:PassedToService restriction. Name scoping does not stop privilege escalation through IAM policy writes.",
+  "intended_behavior": "The deploy role may only create and manage the Lambda execution role sgit-vaults-lambda--<stage>, with permissions bounded by a fixed permissions boundary. It must never be able to modify its own policies or produce a role more privileged than the documented sgit-vaults-* scope (deploy/aws/README.md:49).",
+  "trace": [
+   {
+    "kind": "entrypoint",
+    "file": ".github/workflows/deploy-aws__dev.yml",
+    "line": 3,
+    "scope": "on.push.branches [dev] / workflow_dispatch",
+    "description": "A push to dev, or a manual dispatch, by a repo writer starts the deploy workflow with stage dev."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 103,
+    "scope": "jobs.deploy.environment",
+    "description": "The deploy job runs in the GitHub Environment named by inputs.stage (dev); environments are auto-created and reviewers are only suggested for prod. The workflow has id-token: write (line 47)."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 112,
+    "scope": "jobs.deploy.steps configure-aws-credentials",
+    "description": "The job assumes AWS_DEPLOY_ROLE_ARN with an OIDC token whose sub is repo:SGit-AI/SGit-AI__API:environment:dev."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 60,
+    "scope": "DeployRole.AssumeRolePolicyDocument Condition StringLike sub",
+    "description": "The trust policy accepts environment:dev, main and prod subjects for one shared role, with no ref/workflow binding."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 40,
+    "scope": "DeployRole.Properties.RoleName",
+    "description": "The role's own name sgit-vaults-github-deploy falls inside the sgit-vaults-* prefix; no PermissionsBoundary is set on DeployRole."
+   },
+   {
+    "kind": "sink",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 103,
+    "scope": "DeployRole.Policies sgit-vaults-deploy Sid ExecutionRole Resource",
+    "description": "iam:CreateRole/PutRolePolicy/AttachRolePolicy/PassRole/UpdateRole are allowed on role/sgit-vaults-* with no Condition, including the deploy role itself."
+   }
+  ],
+  "evidence": [
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 100,
+    "description": "Action list includes iam:CreateRole, iam:PassRole, iam:UpdateRole, iam:PutRolePolicy, iam:AttachRolePolicy (lines 100-102)."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 103,
+    "description": "Resource arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-*, no Condition block."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 40,
+    "description": "RoleName sgit-vaults-github-deploy matches role/sgit-vaults-*."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 76,
+    "description": "lambda:* on function:sgit-vaults-* allows running code as any passable sgit-vaults-* role (second route)."
+   },
+   {
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 93,
+    "description": "The legitimate execution role is sgit-vaults-lambda--${Stage}, so narrower scoping is feasible."
+   },
+   {
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 133,
+    "description": "Stage stack deployed with CAPABILITY_NAMED_IAM under the caller's own credentials (no CloudFormation service role)."
+   },
+   {
+    "file": "deploy/aws/README.md",
+    "line": 49,
+    "description": "Documents that the role cannot touch any resource not named sgit-vaults-*; the policy permits account-wide escalation."
+   }
+  ],
+  "conditions": [
+   {
+    "kind": "authorization_role",
+    "description": "The attacker can run a workflow job in GitHub Environment dev, main or prod of SGit-AI/SGit-AI__API (a repo writer or compromised writer token pushing to dev or dispatching, or code running inside the deploy job). Forks and pull requests cannot obtain the environment-bound subject."
+   },
+   {
+    "kind": "system_configuration",
+    "description": "The bootstrap stack was deployed from this template with the default RoleName and AWS_DEPLOY_ROLE_ARN points at it."
+   },
+   {
+    "kind": "system_configuration",
+    "description": "No out-of-band AWS Organizations SCP, permissions boundary or explicit deny restricts iam:AttachRolePolicy/PutRolePolicy for this role (not observable from source)."
+   }
+  ],
+  "execution": {
+   "attacker_perspective": "A repository writer with no AWS console access who is not meant to hold rights beyond the sgit-vaults-* deploy scope.",
+   "payloads": [
+    "aws iam attach-role-policy --role-name sgit-vaults-github-deploy --policy-arn arn:aws:iam::aws:policy/AdministratorAccess"
+   ],
+   "instructions": [
+    "Render DeployRole from deploy/aws/github-oidc-role.cfn.yml with a dummy account id 111122223333; RoleName gives arn:aws:iam::111122223333:role/sgit-vaults-github-deploy.",
+    "Evaluate Sid ExecutionRole statically: iam:AttachRolePolicy on resource pattern arn:aws:iam::111122223333:role/sgit-vaults-* matches the role's own ARN; the statement has no Condition.",
+    "Confirm no other in-repo control applies: no PermissionsBoundary on DeployRole and no Deny statement.",
+    "Confirm a job in environment dev can obtain the role (deploy-aws-lambda.yml:103 and github-oidc-role.cfn.yml:60).",
+    "Do not run against any real AWS account; this is a static policy evaluation of the in-repo template."
+   ],
+   "observed_result": "Static evaluation of the in-repo template: the identity policy allows the deploy role to call iam:AttachRolePolicy and iam:PutRolePolicy on its own ARN with any policy, including AdministratorAccess, and no in-repo boundary or deny prevents it. Out-of-band SCPs or boundaries cannot be ruled out from source. Method: source; nothing executed or promoted."
+  },
+  "remediation": {
+   "strategy": "Stop the deploy role from writing IAM policy it, or a role it can run code as, can benefit from. Preferred: deploy the stage stack through a dedicated CloudFormation service role (aws cloudformation deploy --role-arn) and keep only iam:PassRole on that service role (iam:PassedToService cloudformation.amazonaws.com). Otherwise scope IAM writes to role/sgit-vaults-lambda--*, require iam:PermissionsBoundary on CreateRole/PutRolePolicy/AttachRolePolicy, restrict PassRole to lambda.amazonaws.com, set the boundary on ExecutionRole in lambda.cfn.yml, and explicitly deny iam:* on the deploy role's own ARN. Narrowing the prefix alone is insufficient.",
+   "code_changes": [
+    {
+     "file_name": "deploy/aws/github-oidc-role.cfn.yml",
+     "fixed_code": "              - Sid: ExecutionRoleWrite\n                Effect: Allow\n                Action: [iam:CreateRole, iam:PutRolePolicy, iam:AttachRolePolicy, iam:DetachRolePolicy, iam:DeleteRolePolicy]\n                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-lambda--*'\n                Condition:\n                  StringEquals:\n                    iam:PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/sgit-vaults-lambda-boundary'\n              - Sid: ExecutionRolePass\n                Effect: Allow\n                Action: iam:PassRole\n                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-lambda--*'\n                Condition:\n                  StringEquals:\n                    iam:PassedToService: lambda.amazonaws.com\n              - Sid: NoSelfEdits\n                Effect: Deny\n                Action: ['iam:*']\n                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-github-deploy'\n              - Sid: NoBoundaryRemoval\n                Effect: Deny\n                Action: [iam:DeleteRolePermissionsBoundary, iam:PutRolePermissionsBoundary, iam:CreatePolicyVersion, iam:SetDefaultPolicyVersion]\n                Resource: '*'"
+    }
+   ]
+  },
+  "severity": {
+   "likelihood": {
+    "score": "medium",
+    "reason": "Requires the ability to run a job in a trusted GitHub Environment (repo write to push to dev or dispatch, or a compromised writer token or deploy-job dependency); dev appears unprotected and needs no approval beyond write."
+   },
+   "impact": {
+    "score": "critical",
+    "reason": "AdministratorAccess on the role gives full control of the AWS account, far beyond the documented sgit-vaults-* scope."
+   },
+   "overall_severity": "high"
+  },
+  "confidence": {
+   "score": "high",
+   "reason": "Every decisive step is in-repo source (RoleName matches its own wildcard, no conditions, no boundary, trust accepts environment:dev); residual uncertainty is out-of-band SCPs/boundaries, stated as conditions."
+  }
+ },
+ {
+  "verdict": "needs_validation",
+  "fingerprint": "deploy/aws/github-oidc-role.cfn.yml:DeployRole:single-role-all-stages-no-stage-binding",
+  "title": "One deploy role for dev/main/prod: a dev-Environment job holds the prod stack, prod function config/token, prod vault bucket objects and account-wide DNS/CloudFront authority",
+  "description": "The bootstrap template creates a single OIDC role, sgit-vaults-github-deploy. Its trust policy accepts environment:dev, environment:main and environment:prod for this repository (github-oidc-role.cfn.yml:59-62), and the inline permission policy has no statement that depends on which subject assumed it: no per-stage role, no session-tag or sub-claim condition, no stage component in any resource ARN. cloudformation:* covers stack/sgit-vaults-*/*, which includes sgit-vaults-api--prod. lambda:* covers function:sgit-vaults-*, which includes sgit-vaults-api--prod (lambda.cfn.yml:123); GetFunctionConfiguration on it returns the prod SGRAPH_SEND__ACCESS_TOKEN (lambda.cfn.yml:140). s3:Get*/Put* covers {account}--sgit-vaults--*/*, including the prod bucket (lambda.cfn.yml:79), so GetObject/PutObject on prod vault ciphertext are allowed, contradicting the README claim that object reads and writes belong to the function's role. The Edge statement allows cloudfront:* and route53:ChangeResourceRecordSets on '*'. Any job that obtains an environment:dev token (push to dev, dispatch of the dev workflow, or any branch workflow declaring environment: dev) therefore gets prod-equivalent authority, which bypasses the required reviewers the README tells operators to put on the prod Environment as the 'two-person' control. This root cause is distinct from the execution-role self-escalation candidate: the cross-stage reach is granted directly by stage-unbound resource ARNs with no IAM escalation, and the fix differs (per-stage roles or ARNs rather than a permissions boundary). Exploitability depends on GitHub Environment protection settings and on the account's other resources and guardrails, none of which are source-visible.",
+  "claimed_root_cause": "Stage separation exists only as the GitHub Environment name in the OIDC sub claim (github-oidc-role.cfn.yml:59-62). The single role's permission statements (lines 69-109) are not conditioned on that claim, and their resource ARNs use stage wildcards that also match the prod stack, function and bucket; the Edge statement grants cloudfront:* and route53:ChangeResourceRecordSets on '*'.",
+  "trace": [
+   {
+    "kind": "entrypoint",
+    "file": ".github/workflows/deploy-aws__dev.yml",
+    "line": 3,
+    "scope": "on.push / workflow_dispatch",
+    "description": "A push to dev or a manual dispatch by a repository writer starts the dev deploy; no approval gate in source."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws__dev.yml",
+    "line": 11,
+    "scope": "jobs.dev.with.stage",
+    "description": "Passes stage: dev to the reusable deploy workflow."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 103,
+    "scope": "jobs.deploy.environment",
+    "description": "Deploy job runs in Environment dev (auto-created; reviewers intended on prod only), so the OIDC sub is repo:SGit-AI/SGit-AI__API:environment:dev."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 112,
+    "scope": "jobs.deploy.steps[configure-aws-credentials]",
+    "description": "Assumes the same role (AWS_DEPLOY_ROLE_ARN) that main and prod use."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 60,
+    "scope": "DeployRole.AssumeRolePolicyDocument",
+    "description": "Trust admits environment:dev, and environment:main/prod (61-62) on the same role."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 72,
+    "scope": "DeployRole.Policies.sgit-vaults-deploy.Stacks",
+    "description": "cloudformation:* on stack/sgit-vaults-*/* matches sgit-vaults-api--prod."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 78,
+    "scope": "DeployRole.Policies.sgit-vaults-deploy.LambdaAndLogs",
+    "description": "lambda:* on function:sgit-vaults-* matches the prod function, including GetFunctionConfiguration (prod token) and UpdateFunctionCode/Configuration."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 96,
+    "scope": "DeployRole.Policies.sgit-vaults-deploy.Buckets",
+    "description": "s3:Get*/Put* on {account}--sgit-vaults--*/* covers prod vault objects."
+   },
+   {
+    "kind": "sink",
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 108,
+    "scope": "DeployRole.Policies.sgit-vaults-deploy.Edge",
+    "description": "cloudfront:* and route53:ChangeResourceRecordSets on Resource '*' (line 109) cover every distribution and hosted zone in the account."
+   }
+  ],
+  "evidence": [
+   {
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 79,
+    "description": "Prod bucket name {account}--sgit-vaults--{region}--prod matches the deploy role's S3 wildcard."
+   },
+   {
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 123,
+    "description": "Prod function name sgit-vaults-api--prod matches lambda:* wildcard."
+   },
+   {
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 140,
+    "description": "Prod access token stored as plaintext Lambda env var, readable via lambda:GetFunctionConfiguration."
+   },
+   {
+    "file": "deploy/aws/README.md",
+    "line": 44,
+    "description": "Says object reads and writes are the function's role, not the deploy role's; the policy contradicts this."
+   },
+   {
+    "file": "deploy/aws/README.md",
+    "line": 69,
+    "description": "Required reviewers on prod described as what makes a prod deploy a two-person act; that only gates environment:prod."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 69,
+    "description": "No statement in lines 69-113 has a Condition, stage-specific ARN, or session-tag requirement."
+   }
+  ],
+  "blockers": [
+   "Actual GitHub Environment protection settings for dev and main (required reviewers, deployment branch/tag policies) are not source-visible; if dev/main are protected as strictly as prod the review-gate bypass disappears, though over-breadth remains.",
+   "Whether the repository has writers/dispatchers who are not prod-Environment reviewers is not visible.",
+   "Account-level guardrails (SCPs, out-of-band permissions boundary, prod bucket policy) are not visible.",
+   "Whether the account holds other Route53 hosted zones or CloudFront distributions that the Edge '*' grant would expose is not visible."
+  ],
+  "validation_plan": {
+   "local": "Render github-oidc-role.cfn.yml with default parameters, confirm no Statement in sgit-vaults-deploy has a Condition, and match the resource ARNs against the prod names in lambda.cfn.yml (stack sgit-vaults-api--prod, function sgit-vaults-api--prod, bucket <acct>--sgit-vaults--eu-west-2--prod/*) with IAM wildcard semantics using a stdlib fnmatch fixture. Expect all to match for lambda:GetFunctionConfiguration, s3:GetObject and cloudformation:UpdateStack.",
+   "deployment": "Owner observes, without audit traffic: (1) GitHub Settings \u2192 Environments protection rules and branch policies for dev, main, prod, and prod reviewers vs users with write access; (2) the effective IAM policy of sgit-vaults-github-deploy, any permissions boundary and applicable SCPs; (3) whether the prod bucket policy denies the deploy role object access; (4) Route53 hosted zones and CloudFront distributions unrelated to sgit-vaults. Optionally run read-only iam:SimulatePrincipalPolicy for the role against the prod function (lambda:GetFunctionConfiguration) and prod bucket object (s3:GetObject)."
+  }
+ },
+ {
+  "verdict": "needs_validation",
+  "fingerprint": "deploy/aws/lambda.cfn.yml:AccessToken-empty-default-fail-open-prod",
+  "title": "Following the README can deploy the prod stage with the API access-token gate disabled behind a public Function URL, and the pipeline still goes green",
+  "description": "The prod caller workflow passes secrets.SGIT_VAULTS__ACCESS_TOKEN__PROD into the reusable deploy workflow from a caller job (jobs.prod with uses:) that declares no environment, while deploy/aws/README.md:67 tells operators to put this secret in the prod GitHub Environment. GitHub documents that a caller job without an environment cannot read environment-scoped secrets, and the environment-bound deploy job reads only secrets.ACCESS_TOKEN, so an operator following the README probably gets an empty ACCESS_TOKEN. The workflow then prints only a ::warning and passes AccessToken=\"\" to CloudFormation; HasAccessToken is false, SGRAPH_SEND__ACCESS_TOKEN is unset, no SGRAPH_SEND__ADMIN__BASE_URL is set, and the Function URL is AuthType NONE with Principal '*'. In the origin package served by the image, no admin base URL plus an empty env token means the access-token check allows every request, so write, batch, presigned and transfer routes accept anonymous internet callers on prod. The verify job's gate tests skip when the token is empty and the roundtrip write then succeeds, so the run is green. The open mode is documented ('Empty = explicitly open instance'), so a deliberately empty token is an intended mode; the defect is that the README's prod instruction is likely not reachable from the workflow as written, and a misconfigured prod deploys open with only a warning. Whether this happens depends on hosted-platform secret resolution and where the secret is actually defined.",
+  "claimed_root_cause": "(1) The prod caller (.github/workflows/deploy-aws__prod.yml:9-18) reads the prod token in a reusable-workflow caller job with no environment while the README places it in the prod Environment, and the environment-bound deploy job reads only secrets.ACCESS_TOKEN. (2) An empty token fails open with no hard stop for prod: lambda.cfn.yml defaults AccessToken to '' (:42-46), HasAccessToken (:65) false leaves SGRAPH_SEND__ACCESS_TOKEN unset (:140), the workflow only warns (deploy-aws-lambda.yml:131), the smoke gate tests skip (tests/deploy/test_smoke__deployed_target.py:54,60), and the Function URL is public (lambda.cfn.yml:146,154).",
+  "trace": [
+   {
+    "kind": "entrypoint",
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 146,
+    "scope": "FunctionUrl resource",
+    "description": "Function URL created with AuthType NONE; anonymous internet callers reach the API."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 154,
+    "scope": "FunctionUrlPublicAccess permission",
+    "description": "lambda:InvokeFunctionUrl granted to Principal '*'; the app token is the only gate."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws__prod.yml",
+    "line": 18,
+    "scope": "jobs.prod (reusable-workflow caller, no environment)",
+    "description": "Passes secrets.SGIT_VAULTS__ACCESS_TOKEN__PROD as ACCESS_TOKEN from a job with no environment; an Environment-only secret is expected to resolve empty."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 131,
+    "scope": "jobs.deploy, step 'CloudFormation deploy'",
+    "description": "Empty ACCESS_TOKEN only emits ::warning and deployment continues, including for prod."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 135,
+    "scope": "jobs.deploy, step 'CloudFormation deploy'",
+    "description": "Passes AccessToken=\"\" as a parameter override."
+   },
+   {
+    "kind": "propagation",
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 65,
+    "scope": "Conditions.HasAccessToken",
+    "description": "HasAccessToken is false when AccessToken is ''."
+   },
+   {
+    "kind": "sink",
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 140,
+    "scope": "VaultsFunction.Properties.Environment.Variables",
+    "description": "SGRAPH_SEND__ACCESS_TOKEN becomes AWS::NoValue and no admin base URL is set: the origin app's 'no token configured, allow all' fallback."
+   }
+  ],
+  "evidence": [
+   {
+    "file": "deploy/aws/lambda.cfn.yml",
+    "line": 46,
+    "description": "AccessToken description 'Empty = explicitly open instance'; default '' (line 44)."
+   },
+   {
+    "file": "deploy/aws/README.md",
+    "line": 67,
+    "description": "Prod token row says to put it in the prod Environment's secrets."
+   },
+   {
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 103,
+    "description": "Only the inner deploy job binds environment; it reads secrets.ACCESS_TOKEN, never the stage-named secret."
+   },
+   {
+    "file": "tests/deploy/test_smoke__deployed_target.py",
+    "line": 54,
+    "description": "Write-gate test skips when the token is empty; the run stays green."
+   },
+   {
+    "file": "deploy/docker/serve.py",
+    "line": 19,
+    "description": "The image serves the origin package's User app, whose env fallback allows all when the token is empty and no admin client exists."
+   }
+  ],
+  "blockers": [
+   "Where SGIT_VAULTS__ACCESS_TOKEN__PROD is actually defined (repository secret vs prod Environment only), and whether prod defines a secret named ACCESS_TOKEN.",
+   "GitHub's effective resolution of an environment-only secret referenced from a reusable-workflow caller job without an environment (hosted-platform behaviour).",
+   "Whether stack sgit-vaults-api--prod is deployed and its live Lambda configuration lacks SGRAPH_SEND__ACCESS_TOKEN and SGRAPH_SEND__ADMIN__BASE_URL.",
+   "Whether an empty prod token is operator intent (documented open mode) or misconfiguration; the finding holds only for the latter."
+  ],
+  "validation_plan": {
+   "local": "Statically evaluate deploy/aws/lambda.cfn.yml with AccessToken='' and Stage=prod (YAML loader treating CFN tags as data, under unshare -rn env -i timeout prlimit): HasAccessToken false, SGRAPH_SEND__ACCESS_TOKEN resolves to AWS::NoValue, no SGRAPH_SEND__ADMIN__BASE_URL key, FunctionUrl.AuthType NONE. Confirm jobs.prod in deploy-aws__prod.yml has no environment: key.",
+   "deployment": "Owner-observed, read-only: (1) whether SGIT_VAULTS__ACCESS_TOKEN__PROD is a repository secret or only under Environments > prod; (2) whether the latest 'Deploy AWS \u2014 prod' run shows the 'ACCESS_TOKEN secret not set' warning and skipped test_5b/test_5; (3) aws lambda get-function-configuration --function-name sgit-vaults-api--prod --query 'keys(Environment.Variables)' to record only whether SGRAPH_SEND__ACCESS_TOKEN and SGRAPH_SEND__ADMIN__BASE_URL are present. Do not send audit traffic to the prod Function URL."
+  }
+ },
+ {
+  "verdict": "needs_validation",
+  "fingerprint": "github-workflows/deploy-aws-lambda.yml:cloudformation-deploy:dispatch-input-expression-injection",
+  "title": "Prod workflow_dispatch inputs are textually interpolated into the credentialed CloudFormation deploy shell (expression injection)",
+  "description": "deploy-aws__prod.yml takes three free-text workflow_dispatch inputs (domain_name, hosted_zone_id, certificate_arn) and forwards them unvalidated into the reusable deploy-aws-lambda.yml, where the deploy job (environment: prod, after configure-aws-credentials assumes the OIDC deploy role) expands them with ${{ inputs.* }} directly into the bash text of the 'CloudFormation deploy' step, inside double quotes and in the same script that inlines secrets.ACCESS_TOKEN. A value containing a double quote breaks out of the quoting and runs arbitrary shell in the prod-environment job, which holds the deploy-role AWS credentials and the prod API token. The quote breakout was reproduced with a harmless local fixture (lines 131-136 rendered by literal substitution, aws stubbed, under unshare -rn env -i with timeout and prlimit; a dummy marker printed). Only principals who can already dispatch workflows (repo write) can supply inputs, so this crosses a boundary only if the prod Environment is restricted (deployment branch policy limited to protected refs and/or required reviewers approving reviewed code); if prod accepts any branch, a writer can already run arbitrary code there and the injection adds nothing.",
+  "claimed_root_cause": "deploy-aws-lambda.yml:136 expands ${{ inputs.domain_name }}, ${{ inputs.hosted_zone_id }} and ${{ inputs.certificate_arn }} directly into run: shell text instead of passing them through env:, and deploy-aws__prod.yml:5-7 declares them as free-text inputs with no validation anywhere; the step runs in the prod-environment deploy job after the OIDC role is assumed (:103, :110-113) and inlines secrets.ACCESS_TOKEN (:131, :135).",
+  "trace": [
+   {
+    "kind": "entrypoint",
+    "file": ".github/workflows/deploy-aws__prod.yml",
+    "line": 5,
+    "scope": "workflow_dispatch inputs",
+    "description": "Free-text dispatch input domain_name (also hosted_zone_id :6, certificate_arn :7); only repo writers can dispatch."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws__prod.yml",
+    "line": 13,
+    "scope": "jobs.prod (uses deploy-aws-lambda.yml)",
+    "description": "Forwards the inputs unchanged (:13-15) with stage: prod and the prod access-token secret."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 103,
+    "scope": "jobs.deploy",
+    "description": "Job runs in GitHub Environment prod, the OIDC subject the deploy role trusts and the only place a protection rule applies."
+   },
+   {
+    "kind": "propagation",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 110,
+    "scope": "jobs.deploy steps: configure-aws-credentials",
+    "description": "Assumes the deploy role via OIDC so later steps hold its credentials."
+   },
+   {
+    "kind": "sink",
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 136,
+    "scope": "jobs.deploy steps: CloudFormation deploy (run:)",
+    "description": "DomainName=\"${{ inputs.domain_name }}\" HostedZoneId=\"${{ inputs.hosted_zone_id }}\" CertificateArn=\"${{ inputs.certificate_arn }}\" are substituted as text into bash; a double quote ends the string and injects commands."
+   }
+  ],
+  "evidence": [
+   {
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 131,
+    "description": "Same script inlines ${{ secrets.ACCESS_TOKEN }} (also :135)."
+   },
+   {
+    "file": ".github/workflows/deploy-aws-lambda.yml",
+    "line": 103,
+    "description": "Only a comment suggests reviewers on prod; no branch policy or reviewers are enforced in source."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 59,
+    "description": "Role trust limited by sub to environment:dev/main/prod (:59-62) with no ref/workflow binding."
+   },
+   {
+    "file": "deploy/aws/github-oidc-role.cfn.yml",
+    "line": 101,
+    "description": "Privilege available to injected code: IAM writes on role/sgit-vaults-* and cloudfront:*/route53 on * (:101-109)."
+   },
+   {
+    "file": ".github/workflows/deploy-aws__prod.yml",
+    "line": 3,
+    "description": "workflow_dispatch is the only trigger."
+   }
+  ],
+  "blockers": [
+   "The prod GitHub Environment's deployment branch/tag policy is not source-visible; if prod accepts any branch the injection crosses no boundary.",
+   "Whether prod has required reviewers, and whether the approval UI shows dispatch input values to reviewers, is hosted-platform configuration/behaviour.",
+   "The set of principals with write/dispatch rights versus those able to merge to main is not source-visible."
+  ],
+  "validation_plan": {
+   "local": "Copy deploy-aws-lambda.yml lines 131-136 into a scratch script, substitute ${{ inputs.domain_name }} with 'vaults.example.test\" ; echo INJECTED_MARKER_DUMMY ; : \"', stub aws() as echo, and run under unshare -rn env -i timeout 5 prlimit --as=200000000 /bin/bash; the marker prints after the stub (already reproduced). After the fix (inputs via env: and \"$DOMAIN_NAME\"), the same payload must reach aws as one argument and the marker must not print.",
+   "deployment": "A repository owner observes, without dispatching any workflow, Settings > Environments > prod: the deployment branches/tags rule, required reviewers, and whether prod secrets/role ARN are environment-scoped; and which principals have write/dispatch access but cannot merge to the refs prod allows. Never trigger the prod workflow with a test payload."
+  }
+ }
+]

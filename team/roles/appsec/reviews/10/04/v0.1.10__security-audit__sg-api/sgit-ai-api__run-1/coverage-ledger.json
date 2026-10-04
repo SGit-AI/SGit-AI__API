@@ -1,0 +1,454 @@
+[
+  {
+    "coverage_id": ".github%2Fworkflows%23triggers-and-inputs::.github%2Fworkflows%23job-permissions-and-secrets::profile%2Fquick%2Fall-in-scope-subsystems::SUPPLY-CHAIN-AND-RELEASE.md%23Untrusted%20code%20in%20a%20privileged%20workflow",
+    "canonical_refs": {
+      "surface": ".github/workflows#triggers-and-inputs",
+      "boundary": ".github/workflows#job-permissions-and-secrets",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow"
+    },
+    "surface": "Workflow triggers, dispatch inputs, secrets and actions",
+    "boundary": "GitHub Actions job privileges (secrets, id-token, contents:write)",
+    "subsystem": "all in-scope subsystems (quick)",
+    "attack_class": "Untrusted code / expression injection in privileged workflows",
+    "starting_paths": [
+      ".github/workflows/deploy-aws-lambda.yml",
+      ".github/workflows/deploy-aws__dev.yml",
+      ".github/workflows/deploy-aws__main.yml",
+      ".github/workflows/deploy-aws__prod.yml",
+      ".github/workflows/regression-parity.yml",
+      ".github/workflows/ci-pipeline.yml",
+      ".github/workflows/ci-pipeline__dev.yml",
+      ".github/workflows/ci-pipeline__main.yml",
+      ".github/workflows/deploy-vault-pages.yml",
+      "tests/regression/conftest.py",
+      "tests/regression/sgit_scenarios.py",
+      "tests/deploy/test_smoke__deployed_target.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Injection",
+    "selected_companion_blocks": [
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Workflow command and expression confusion",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Automation identity overreach",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Universal moves",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach",
+        "reason": "owned by unit B1"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "b-h2",
+    "reviewed_paths": [
+      ".github/workflows/ci-pipeline.yml",
+      ".github/workflows/ci-pipeline__dev.yml",
+      ".github/workflows/ci-pipeline__main.yml",
+      ".github/workflows/deploy-aws-lambda.yml",
+      ".github/workflows/deploy-aws__dev.yml",
+      ".github/workflows/deploy-aws__main.yml",
+      ".github/workflows/deploy-aws__prod.yml",
+      ".github/workflows/deploy-vault-pages.yml",
+      ".github/workflows/regression-parity.yml",
+      "deploy/aws/cloudfront_ensure_enabled.sh",
+      "deploy/aws/lambda.cfn.yml",
+      "tests/deploy/test_smoke__deployed_target.py",
+      "tests/regression/conftest.py",
+      "tests/regression/sgit_scenarios.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "b-h2",
+        "reviewed_paths": [
+          ".github/workflows/deploy-aws__prod.yml",
+          ".github/workflows/deploy-aws-lambda.yml"
+        ],
+        "invariant": "Free-text workflow_dispatch inputs reach privileged run: shells only as env data, never via ${{ }} interpolation in a job holding AWS OIDC credentials and stage secrets.",
+        "method": "source",
+        "result": "Violated: deploy-aws__prod.yml:5-7 free-text inputs -> deploy-aws-lambda.yml:136 interpolated into run: of deploy job (environment prod, after configure-aws-credentials :110-113, same script inlines secrets.ACCESS_TOKEN :131,:135). Harmless fixture (unshare -rn env -i bash, aws stubbed, dummy payload) printed INJECTED_MARKER_DUMMY: quote breakout executes. Privilege gain depends on non-source prod Environment protection.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h2",
+        "reviewed_paths": [
+          ".github/workflows/deploy-aws-lambda.yml",
+          "deploy/aws/lambda.cfn.yml",
+          "deploy/aws/cloudfront_ensure_enabled.sh"
+        ],
+        "invariant": "Outputs derived from inputs are not re-interpolated into later run: scripts with independent impact.",
+        "method": "source",
+        "result": "Variants at :189,:199-201 consolidated under the :136 fingerprint; no independent impact (record job has no AWS creds). cloudfront_ensure_enabled.sh quotes its args.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h2",
+        "reviewed_paths": [
+          ".github/workflows/regression-parity.yml",
+          "tests/regression/conftest.py",
+          "tests/regression/sgit_scenarios.py"
+        ],
+        "invariant": "pull_request jobs do not expose protected secrets/write tokens to fork code.",
+        "method": "source",
+        "result": "Holds: pull_request (not _target); forks get no secrets. Dispatch new_url sends repo-level SG_NEW_TOKEN to any URL, but any dispatcher can already read that secret: no privilege gain (hardening).",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h2",
+        "reviewed_paths": [
+          ".github/workflows/ci-pipeline.yml",
+          ".github/workflows/ci-pipeline__dev.yml",
+          ".github/workflows/ci-pipeline__main.yml",
+          ".github/workflows/deploy-aws__dev.yml",
+          ".github/workflows/deploy-aws__main.yml",
+          ".github/workflows/deploy-vault-pages.yml"
+        ],
+        "invariant": "Privileged workflows run only on trusted events with trusted inputs.",
+        "method": "source",
+        "result": "Push/dispatch only, no free-text inputs in run:; no pull_request_target/issue_comment/workflow_run. Mutable OSBot-GitHub-Actions@dev = hardening.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h2",
+        "reviewed_paths": [
+          "tests/deploy/test_smoke__deployed_target.py"
+        ],
+        "invariant": "Smoke suite sends stage token only to the deployed stack.",
+        "method": "source",
+        "result": "Holds: SG_BASE_URL is the CFN FunctionUrl output.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "github-workflows/deploy-aws-lambda.yml:cloudformation-deploy:dispatch-input-expression-injection"
+    ],
+    "unresolved": [],
+    "x_label": "B2",
+    "x_hardening": [
+      "deploy-aws-lambda.yml:69,131,135 interpolate secrets (AWS_DEPLOY_ROLE_ARN, ACCESS_TOKEN) directly into run: text; pass via env:.",
+      "OSBot-GitHub-Actions@dev mutable ref used with contents: write (ci-pipeline.yml:33,46) and in deploy-aws-lambda.yml:57; pin to SHA.",
+      "regression-parity.yml has no permissions: block and runs unpinned pip installs; add permissions: contents: read.",
+      "regression-parity.yml dispatch new_url can send SG_NEW_TOKEN to any host; move to an environment and allowlist.",
+      "cloudfront job (deploy-aws-lambda.yml:178-189) assumes the role without environment: — OIDC sub will not match; fails closed (functional defect).",
+      "deploy-aws__dev/main workflow_dispatch from any ref deploys unmerged code unless Environment branch policies restrict it."
+    ]
+  },
+  {
+    "coverage_id": ".github%2Fworkflows%2Fdeploy-vault-pages.yml%23deploy::vault%2F.sg_vault%2Fbare%23public-projection::profile%2Fquick%2Fall-in-scope-subsystems::CLOUD-AND-DEPLOYMENT.md%23Secret%20exposure%20across%20workload%20boundaries",
+    "canonical_refs": {
+      "surface": ".github/workflows/deploy-vault-pages.yml#deploy",
+      "boundary": "vault/.sg_vault/bare#public-projection",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Secret exposure across workload boundaries"
+    },
+    "surface": "Static vault projection to GitHub Pages + conformance suite",
+    "boundary": "Repo contents -> public Pages origin; committed read key",
+    "subsystem": "all in-scope subsystems (quick)",
+    "attack_class": "CLOUD-AND-DEPLOYMENT.md#Secret exposure across workload boundaries",
+    "starting_paths": [
+      ".github/workflows/deploy-vault-pages.yml",
+      "tests/unit/vault_conformance/test_static_vault_read_path.py"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Secret exposure across workload boundaries",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Automation identity overreach",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "CLIENT-SIDE.md#DOM-based XSS",
+        "reason": "pages/ UI out of scope"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "quick_profile_final_critic"
+    ],
+    "x_label": "B5"
+  },
+  {
+    "coverage_id": "deploy%2Faws%2Fgithub-oidc-role.cfn.yml%23DeployRole.AssumeRolePolicyDocument::deploy%2Faws%2Fgithub-oidc-role.cfn.yml%23DeployRole.Policies::profile%2Fquick%2Fall-in-scope-subsystems::CLOUD-AND-DEPLOYMENT.md%23Workload%20identity%20overreach",
+    "canonical_refs": {
+      "surface": "deploy/aws/github-oidc-role.cfn.yml#DeployRole.AssumeRolePolicyDocument",
+      "boundary": "deploy/aws/github-oidc-role.cfn.yml#DeployRole.Policies",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach"
+    },
+    "surface": "GitHub OIDC token for environment-scoped jobs",
+    "boundary": "OIDC trust policy + deploy role permission policy",
+    "subsystem": "all in-scope subsystems (quick)",
+    "attack_class": "Workload identity overreach / cross-stage role confusion",
+    "starting_paths": [
+      "deploy/aws/github-oidc-role.cfn.yml",
+      "deploy/aws/README.md",
+      ".github/workflows/deploy-aws-lambda.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Access control",
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach",
+      "CLOUD-AND-DEPLOYMENT.md#Cross-account or cross-tenant role confusion",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+        "reason": "owned by unit B2"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "b-h1",
+    "reviewed_paths": [
+      ".github/workflows/deploy-aws-lambda.yml",
+      ".github/workflows/deploy-aws__dev.yml",
+      ".github/workflows/deploy-aws__prod.yml",
+      "deploy/aws/README.md",
+      "deploy/aws/github-oidc-role.cfn.yml",
+      "deploy/aws/lambda.cfn.yml"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "b-h1",
+        "reviewed_paths": [
+          "deploy/aws/github-oidc-role.cfn.yml"
+        ],
+        "invariant": "OIDC trust binds aud and sub to this repo and the three stage environments only",
+        "method": "source",
+        "result": "Holds (aud StringEquals; sub exact environment:dev|main|prod); no ref/job_workflow_ref binding.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h1",
+        "reviewed_paths": [
+          "deploy/aws/github-oidc-role.cfn.yml",
+          "deploy/aws/README.md"
+        ],
+        "invariant": "Deploy role cannot modify its own IAM or escalate",
+        "method": "source",
+        "result": "FAILS: Sid ExecutionRole iam:PutRolePolicy/AttachRolePolicy/CreateRole/PassRole on role/sgit-vaults-* with no condition/boundary; own name sgit-vaults-github-deploy matches -> effective account admin.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h1",
+        "reviewed_paths": [
+          "deploy/aws/github-oidc-role.cfn.yml",
+          ".github/workflows/deploy-aws-lambda.yml",
+          ".github/workflows/deploy-aws__dev.yml",
+          ".github/workflows/deploy-aws__prod.yml",
+          "deploy/aws/lambda.cfn.yml"
+        ],
+        "invariant": "dev/main session cannot act on prod resources",
+        "method": "source",
+        "result": "One role for all stages, no stage-conditioned statement; dev session has cloudformation/lambda on prod stack/function, s3 Get*/Put* on prod objects, route53/cloudfront on *. Gate impact depends on Environment config (needs_validation).",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h1",
+        "reviewed_paths": [
+          ".github/workflows/deploy-aws-lambda.yml"
+        ],
+        "invariant": "Only environment-scoped jobs obtain AWS credentials",
+        "method": "source",
+        "result": "Holds; non-environment jobs (incl. cloudfront job) are rejected by trust (functional defect).",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "deploy/aws/github-oidc-role.cfn.yml:DeployRole:iam-self-escalation-via-sgit-vaults-role-wildcard",
+      "deploy/aws/github-oidc-role.cfn.yml:DeployRole:single-role-all-stages-no-stage-binding"
+    ],
+    "unresolved": [],
+    "x_label": "B1",
+    "x_hardening": [
+      "cloudfront job lacks environment: and cannot assume the role (functional).",
+      "Add job_workflow_ref/ref binding to the OIDC trust.",
+      "Move id-token: write from workflow level to the deploy/cloudfront jobs only.",
+      "Narrow s3:Put* on stage buckets (PutBucketPolicy/PublicAccessBlock/Acl)."
+    ]
+  },
+  {
+    "coverage_id": "deploy%2Faws%2Fgithub-oidc-role.cfn.yml%23DeployRole.Policies.Stacks::deploy%2Faws%2Fgithub-oidc-role.cfn.yml%23sgit-vaults-github-oidc-stack::profile%2Fquick%2Fall-in-scope-subsystems::CLOUD-AND-DEPLOYMENT.md%23Workload%20identity%20overreach::bootstrap-update%2Frollback%2Fteardown",
+    "canonical_refs": {
+      "surface": "deploy/aws/github-oidc-role.cfn.yml#DeployRole.Policies.Stacks",
+      "boundary": "deploy/aws/github-oidc-role.cfn.yml#sgit-vaults-github-oidc-stack",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach",
+      "lifecycle": "bootstrap-update/rollback/teardown"
+    },
+    "surface": "Deploy lifecycle: bootstrap stack update, failed deploy/rollback, teardown",
+    "boundary": "Deploy role -> bootstrap stack sgit-vaults-github-oidc and retained stage resources",
+    "subsystem": "all in-scope subsystems (quick)",
+    "attack_class": "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach (lifecycle)",
+    "starting_paths": [
+      "deploy/aws/github-oidc-role.cfn.yml",
+      "deploy/aws/lambda.cfn.yml",
+      "deploy/aws/README.md",
+      ".github/workflows/deploy-aws-lambda.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Business logic",
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Workload identity overreach",
+      "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "SUPPLY-CHAIN-AND-RELEASE.md#Untrusted code in a privileged workflow",
+        "reason": "owned by unit B2"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "deferred",
+    "agent_id": null,
+    "reviewed_paths": [],
+    "local_checks": [],
+    "result_fingerprints": [],
+    "unresolved": [
+      "quick_profile_final_critic"
+    ],
+    "x_label": "B4",
+    "lifecycle": "bootstrap stack update / failed deploy rollback / teardown"
+  },
+  {
+    "coverage_id": "deploy%2Faws%2Flambda.cfn.yml%23FunctionUrl::deploy%2Faws%2Flambda.cfn.yml%23Function.Environment.SGRAPH_SEND__ACCESS_TOKEN::profile%2Fquick%2Fall-in-scope-subsystems::CLOUD-AND-DEPLOYMENT.md%23Security-control%20precedence%20drift",
+    "canonical_refs": {
+      "surface": "deploy/aws/lambda.cfn.yml#FunctionUrl",
+      "boundary": "deploy/aws/lambda.cfn.yml#Function.Environment.SGRAPH_SEND__ACCESS_TOKEN",
+      "subsystem": "profile/quick/all-in-scope-subsystems",
+      "attack_class": "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift"
+    },
+    "surface": "Deployed Function URL / CloudFront and container image",
+    "boundary": "App access token + Lambda/Function URL configuration",
+    "subsystem": "all in-scope subsystems (quick)",
+    "attack_class": "Security-control precedence drift / secret exposure / build-input integrity",
+    "starting_paths": [
+      "deploy/aws/lambda.cfn.yml",
+      "deploy/docker/Dockerfile",
+      "deploy/docker/serve.py",
+      "deploy/docker/requirements.txt",
+      "deploy/aws/cloudfront_ensure_enabled.sh",
+      ".github/workflows/deploy-aws-lambda.yml"
+    ],
+    "ordinary_attack_class_block": "ATTACK-CLASSES.md#Cryptography and secrets",
+    "selected_companion_blocks": [
+      "CLOUD-AND-DEPLOYMENT.md#Core discipline",
+      "CLOUD-AND-DEPLOYMENT.md#Security-control precedence drift",
+      "CLOUD-AND-DEPLOYMENT.md#Secret exposure across workload boundaries",
+      "CLOUD-AND-DEPLOYMENT.md#Unexpected service or management-plane reachability",
+      "CLOUD-AND-DEPLOYMENT.md#Universal moves",
+      "CLOUD-AND-DEPLOYMENT.md#Validation rules",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Core discipline",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Mutable and unbound build inputs",
+      "SUPPLY-CHAIN-AND-RELEASE.md#Validation rules"
+    ],
+    "excluded_blocks": [
+      {
+        "block": "WEB-PROTOCOL-AND-AUTH.md#API-key scope and resource binding",
+        "reason": "app-level token semantics live in the origin package (Run A)"
+      }
+    ],
+    "prior_status": "none",
+    "attempts": [],
+    "wave": 1,
+    "status": "candidate",
+    "agent_id": "b-h3",
+    "reviewed_paths": [
+      ".github/workflows/deploy-aws-lambda.yml",
+      ".github/workflows/deploy-aws__dev.yml",
+      ".github/workflows/deploy-aws__prod.yml",
+      "deploy/aws/README.md",
+      "deploy/aws/cloudfront_ensure_enabled.sh",
+      "deploy/aws/github-oidc-role.cfn.yml",
+      "deploy/aws/lambda.cfn.yml",
+      "deploy/docker/Dockerfile",
+      "deploy/docker/requirements.txt",
+      "deploy/docker/serve.py",
+      "tests/deploy/test_smoke__deployed_target.py"
+    ],
+    "local_checks": [
+      {
+        "agent_id": "b-h3",
+        "reviewed_paths": [
+          "deploy/aws/lambda.cfn.yml",
+          ".github/workflows/deploy-aws-lambda.yml",
+          ".github/workflows/deploy-aws__prod.yml",
+          ".github/workflows/deploy-aws__dev.yml",
+          "deploy/aws/README.md",
+          "tests/deploy/test_smoke__deployed_target.py"
+        ],
+        "invariant": "A maintained stage never comes up with the token gate disabled; documented secret placement reaches the Lambda",
+        "method": "source",
+        "result": "AccessToken default '' -> env var omitted -> origin allow-all fallback; workflow warns only; smoke gate test skips; prod caller cannot read an Environment-scoped secret as README instructs. needs_validation on actual secret placement.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h3",
+        "reviewed_paths": [
+          "deploy/aws/lambda.cfn.yml",
+          "deploy/aws/github-oidc-role.cfn.yml"
+        ],
+        "invariant": "Stage token not readable by lower-trust stage",
+        "method": "source",
+        "result": "Plaintext in Lambda env, readable by the shared deploy role from environment:dev; root cause in B1 stage-binding candidate.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h3",
+        "reviewed_paths": [
+          "deploy/aws/lambda.cfn.yml",
+          "deploy/aws/cloudfront_ensure_enabled.sh"
+        ],
+        "invariant": "Edge is not the only control in front of a public origin",
+        "method": "source",
+        "result": "Function URL public and bypasses CloudFront, but CloudFront adds no control: no finding.",
+        "artifact": null
+      },
+      {
+        "agent_id": "b-h3",
+        "reviewed_paths": [
+          "deploy/docker/Dockerfile",
+          "deploy/docker/requirements.txt",
+          "deploy/docker/serve.py"
+        ],
+        "invariant": "Build inputs bound to reviewed content",
+        "method": "source",
+        "result": "Origin pinned by commit archive; base images tag-pinned; deps unpinned: hardening only.",
+        "artifact": null
+      }
+    ],
+    "result_fingerprints": [
+      "deploy/aws/lambda.cfn.yml:AccessToken-empty-default-fail-open-prod"
+    ],
+    "unresolved": [],
+    "x_label": "B3",
+    "x_hardening": [
+      "Pass ACCESS_TOKEN via env: not run: text.",
+      "Token plaintext in Lambda env; use Secrets Manager/SSM + stage-scoped roles.",
+      "Pin Dockerfile deps by hash and images by digest.",
+      "Function URL bypasses any future edge control; no reserved concurrency.",
+      "Origin: non-constant-time token compare; token accepted as query param (Run A)."
+    ]
+  }
+]

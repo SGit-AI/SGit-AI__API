@@ -1,0 +1,31 @@
+{
+  "run_id": "sgit-ai-api-run-1",
+  "repo": "SGit-AI/SGit-AI__API",
+  "target": "/home/user/SGit-AI__API",
+  "source_ref": {
+    "commit": "e5f39f6e8bfc268198c59c270278dfc7e213f1be",
+    "dirty": true,
+    "note": "only dirty path is the untracked .claude/skills/security-audit/ (the audit skill itself, not reviewed)"
+  },
+  "profile": "quick",
+  "scope_paths": [
+    "deploy/",
+    ".github/workflows/",
+    "tests/regression/",
+    "tests/deploy/",
+    "tests/unit/vault_conformance/"
+  ],
+  "scope_note": "Scoped run: the new SG/API deploy lane (AWS Lambda dev/main/prod, OIDC role, container image), CI, the sgit parity gate and conformance tests. pages/, vault/, programme/, library/, team/ are out_of_scope.",
+  "budget": 12,
+  "execution_policy": "sandboxed-source-and-local-only",
+  "execution_note": "Source-only: rendering CloudFormation/GitHub Actions is static review; no AWS, no GitHub API calls, no workflow runs.",
+  "companions": [
+    "SUPPLY-CHAIN-AND-RELEASE.md",
+    "CLOUD-AND-DEPLOYMENT.md"
+  ],
+  "prior_runs": [],
+  "shared_file_owner": "parent",
+  "run_status": "complete",
+  "agents_spent": 11,
+  "coverage_note": "quick profile: partial pass; 2 units deferred by final critic"
+}
