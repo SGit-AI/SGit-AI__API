@@ -1,5 +1,5 @@
-# Runtime of the API-only image. The origin package is pinned by the Dockerfile's
-# ORIGIN_PACKAGE_VERSION build arg (sed-replaced at build time).
+# Runtime of the API-only image. The origin package line is rewritten at build time to the
+# git archive of ORIGIN_COMMIT (see Dockerfile) — PyPI only carries major releases.
 sgraph-ai-app-send
 mcp<2            # fastapi-mcp 0.4.0 calls Server() positionally; mcp 2.x made those args keyword-only
 uvicorn

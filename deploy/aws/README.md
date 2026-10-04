@@ -78,7 +78,8 @@ workflow with a different `AWS_REGION`; the bucket and stack names already carry
 ## What gets deployed today
 
 Until phase-1 step 1.3 lands the code in this repo, the image serves the vault API from the
-**published origin package** (`sgraph-ai-app-send`, pinned in the Dockerfile) — the same app
+**origin package at the baseline commit** (`sgraph-ai-app-send` from the git archive of
+`ORIGIN_COMMIT` in the Dockerfile — PyPI only carries major releases) — the same app
 that runs on `dev.send.sgraph.ai`, booted standalone, API only (no UI overlay, no Send UIs).
 `deploy/docker/serve.py` switches to `sgit_vaults` the moment it is importable; the pipeline,
 the templates, the gates and the role do not change. That is the point of building the lane

@@ -2,7 +2,9 @@
 sgit-ai
 requests
 pytest
-# legacy server, in-process (the vault API as it is today, from PyPI)
-sgraph-ai-app-send
+# legacy server, in-process: the vault API exactly as it runs today — the ORIGIN REPO AT THE
+# BASELINE COMMIT (dev v0.33.69, 5d50ae8). PyPI only carries major releases (0.33.0 predates
+# the append lane), so the package is installed from the git archive, not from PyPI.
+sgraph-ai-app-send @ https://github.com/the-cyber-boardroom/SGraph-AI__App__Send/archive/5d50ae83c06bc1d575b58c95aea9c921e5b56a73.tar.gz
 mcp<2            # fastapi-mcp 0.4.0 calls Server() positionally; mcp 2.x made those args keyword-only
 uvicorn

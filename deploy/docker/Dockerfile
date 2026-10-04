@@ -1,8 +1,9 @@
 # sgit vaults API — API-only image (no UI overlay), one image for Docker, Lambda, Fargate, Cloud Run.
 #
 # Until phase-1 step 1.3 lands the code in this repo, the image serves the vault API from the
-# published origin package (sgraph-ai-app-send, pinned) — the same app that runs today on
-# dev.send.sgraph.ai, booted standalone. serve.py switches to sgit_vaults when it is importable.
+# ORIGIN REPO AT THE BASELINE COMMIT (sgraph-ai-app-send from the git archive of ORIGIN_COMMIT —
+# PyPI only carries major releases, and the API that runs today is dev) — the same app that runs
+# on dev.send.sgraph.ai, booted standalone. serve.py switches to sgit_vaults when importable.
 # Nothing about the API's behaviour changes here; only where it is built and deployed from.
 
 FROM python:3.12-slim
@@ -12,10 +13,10 @@ FROM python:3.12-slim
 COPY --from=public.ecr.aws/awsguru/aws-lambda-adapter:0.9.1 /lambda-adapter /opt/extensions/lambda-adapter
 ENV AWS_LWA_READINESS_CHECK_PATH=/api/info/health
 
-ARG ORIGIN_PACKAGE_VERSION=0.33.69
+ARG ORIGIN_COMMIT=5d50ae83c06bc1d575b58c95aea9c921e5b56a73     # __Send dev @ v0.33.69 — the phase-1 baseline
 WORKDIR /app
 COPY deploy/docker/requirements.txt ./requirements.txt
-RUN sed -i "s/^sgraph-ai-app-send.*/sgraph-ai-app-send==${ORIGIN_PACKAGE_VERSION}/" requirements.txt \
+RUN sed -i "s|^sgraph-ai-app-send.*|sgraph-ai-app-send @ https://github.com/the-cyber-boardroom/SGraph-AI__App__Send/archive/${ORIGIN_COMMIT}.tar.gz|" requirements.txt \
  && pip install --no-cache-dir -r requirements.txt
 
 # this repo's package (the destination of the move) — a no-op for the API until step 1.3
