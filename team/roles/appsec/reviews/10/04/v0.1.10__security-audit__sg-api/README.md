@@ -7,6 +7,14 @@ Two scoped runs of the vendored Cloudflare `security-audit` skill (`.claude/skil
 | [`sgit-ai-api__run-1`](sgit-ai-api__run-1/REPORT.md) | This repo's deploy lane: `deploy/`, `.github/workflows/`, `tests/regression/`, `tests/deploy/` @ `e5f39f6` | quick | **1 high** | 3 | 0 | 2 |
 | [`sgraph-ai-app-send__run-1`](sgraph-ai-app-send__run-1/REPORT.md) | The extraction set (`lambda__user/`, `utils/`, `_for_osbot_aws/`) in SGraph-AI__App__Send @ `5d50ae83`, the baseline that the parity gate and deploy lane pin | standard | 0 | 12 | 1 | 1 |
 
+## Status after verification (same day) — read `VERIFICATION.md`
+
+A follow-up session with the pinned dependencies installed ran the audit's own bounded plans.
+**Six of Run A's twelve leads are now confirmed** (1, 2, 3 on disk storage, 4, 5, 6) and the
+deploy-lane finding plus its three leads are **fixed in this repo** (per-stage boundary-conditioned
+roles, no shell interpolation of inputs or secrets, fail-closed token policy, one Environment-bound
+job). The confirmed origin leads are the origin repo's to fix; they go on the move's step 1.4+ fix list.
+
 ## Act on first
 
 1. **(Confirmed, high) The deploy role can make itself AWS account admin.** `deploy/aws/github-oidc-role.cfn.yml:98-103` grants IAM writes on `role/sgit-vaults-*`, and the role's own name `sgit-vaults-github-deploy` matches that pattern. There is no condition and no permissions boundary. Any job in the `dev` Environment can escalate. Fix before running the bootstrap stack in any shared account. The patch is in `sgit-ai-api__run-1/FINDINGS-DETAIL.md`.

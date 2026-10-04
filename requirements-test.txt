@@ -7,3 +7,6 @@ coverage
 
 # static-vault conformance suite (tests/unit/vault_conformance) drives the real CLI
 sgit-ai
+
+# deploy-template policy tests (tests/unit/deploy) parse the CloudFormation templates and workflows
+pyyaml

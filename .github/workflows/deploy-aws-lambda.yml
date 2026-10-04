@@ -1,12 +1,18 @@
 # Deploy the sgit vaults API to AWS Lambda — one stack per stage — then prove it.
 #
-#   build image → push to ECR → CloudFormation deploy → smoke → parity gate vs the API as it
-#   runs today → CloudFront enabled check → deployment record.
+#   build image → (inside the stage's GitHub Environment:) push to ECR → CloudFormation deploy →
+#   smoke suite → parity gate vs the API as it runs today → CloudFront enabled check → record.
 #
-# Auth: GitHub OIDC only (secret AWS_DEPLOY_ROLE_ARN = the role from deploy/aws/github-oidc-role.cfn.yml).
-# Without the secret every job after the tests skips gracefully and says so.
-# Stages mirror the origin repo's three User Lambdas: dev (push to dev), main (push to main),
-# prod (manual, via the "prod" GitHub Environment so it can require approval).
+# Auth: GitHub OIDC only. Every stage has its own GitHub Environment (dev / main / prod) holding
+# two Environment secrets: AWS_DEPLOY_ROLE_ARN (that stage's role from deploy/aws/github-oidc-role.cfn.yml)
+# and SGIT_VAULTS__ACCESS_TOKEN (that stage's API access token). Callers use `secrets: inherit`;
+# the one job that deploys runs inside the Environment, so Environment-scoped secrets resolve
+# there and nowhere else. Without AWS_DEPLOY_ROLE_ARN the deploy job says so and stops; tests and
+# the image build still run. An empty access token FAILS the deploy unless the caller passed
+# open_instance=true on purpose — a stage is never left open by accident.
+#
+# Every value that comes from a dispatch input or a secret reaches a shell step through `env:`,
+# never by `${{ }}` interpolation into the script text (expression injection).
 
 name: Deploy AWS Lambda (base)
 
@@ -15,11 +21,15 @@ on:
     inputs:
       stage:
         required: true
-        type: string          # dev | main | prod
+        type: string          # dev | main | prod — must equal the GitHub Environment name
       storage_mode:
         required: false
         type: string
         default: s3
+      open_instance:          # deploy with NO access token (every route open). Explicit, never implied.
+        required: false
+        type: boolean
+        default: false
       domain_name:            # optional custom domain trio (CloudFront + Route53)
         required: false
         type: string
@@ -32,11 +42,6 @@ on:
         required: false
         type: string
         default: ''
-    secrets:
-      AWS_DEPLOY_ROLE_ARN:
-        required: false
-      ACCESS_TOKEN:
-        required: false
 
 env:
   AWS_REGION   : eu-west-2
@@ -44,8 +49,7 @@ env:
   STACK_NAME   : sgit-vaults-api--${{ inputs.stage }}
 
 permissions:
-  id-token: write
-  contents: read
+  contents: read              # id-token: write is granted to the deploy job only
 
 jobs:
 
@@ -58,17 +62,6 @@ jobs:
         with:
           test_target: "tests/unit"
 
-  check-role:
-    name: OIDC role configured?
-    runs-on: ubuntu-latest
-    outputs:
-      has-role: ${{ steps.check.outputs.has-role }}
-    steps:
-      - id: check
-        run: |
-          if [ -n "${{ secrets.AWS_DEPLOY_ROLE_ARN }}" ]; then echo "has-role=true" >> "$GITHUB_OUTPUT";
-          else echo "has-role=false" >> "$GITHUB_OUTPUT"; echo "::notice::AWS_DEPLOY_ROLE_ARN not set — deploy skipped (tests + image build still run)"; fi
-
   build-image:
     name: Build the API-only image
     runs-on: ubuntu-latest
@@ -80,124 +73,163 @@ jobs:
       - id: meta
         run: echo "tag=$(tr -d '[:space:]' < sgit_ai_api/version)-${GITHUB_SHA::8}" >> "$GITHUB_OUTPUT"
       - name: Build (linux/amd64 — the Lambda architecture)
-        run: docker build -f deploy/docker/Dockerfile -t $ECR_REPO:${{ steps.meta.outputs.tag }} .
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: docker build -f deploy/docker/Dockerfile -t "$ECR_REPO:$TAG" .
       - name: Self-contained invariant — boots with no network, answers health and OpenAPI
+        env:
+          TAG: ${{ steps.meta.outputs.tag }}
         run: |
-          docker run -d --name inv --network=none -e SEND__STORAGE_MODE=memory $ECR_REPO:${{ steps.meta.outputs.tag }}
+          docker run -d --name inv --network=none -e SEND__STORAGE_MODE=memory "$ECR_REPO:$TAG"
           sleep 8
           docker exec inv python -c "import urllib.request; assert b'ok' in urllib.request.urlopen('http://127.0.0.1:8080/api/info/health').read()"
           docker exec inv python -c "import urllib.request,json; p=json.load(urllib.request.urlopen('http://127.0.0.1:8080/api/openapi.json'))['paths']; assert any(x.startswith('/api/vault/') for x in p), p"
           docker rm -f inv
-      - run: docker save $ECR_REPO:${{ steps.meta.outputs.tag }} | gzip > /tmp/image.tar.gz
+      - env:
+          TAG: ${{ steps.meta.outputs.tag }}
+        run: docker save "$ECR_REPO:$TAG" | gzip > /tmp/image.tar.gz
       - uses: actions/upload-artifact@v4
         with:
           name: image-${{ inputs.stage }}
           path: /tmp/image.tar.gz
           retention-days: 1
 
+  # ONE job holds the stage's credentials, so the stage's Environment protection (required
+  # reviewers on prod) is asked exactly once, and Environment secrets resolve exactly here.
   deploy:
-    name: Deploy the stage stack
+    name: Deploy, verify and check the edge
     runs-on: ubuntu-latest
-    needs: [build-image, check-role]
-    if: needs.check-role.outputs.has-role == 'true'
-    environment: ${{ inputs.stage }}            # dev / main / prod GitHub Environments (auto-created); put required reviewers on prod
+    needs: [build-image]
+    environment: ${{ inputs.stage }}
+    permissions:
+      id-token: write
+      contents: read
+    env:
+      STAGE          : ${{ inputs.stage }}
+      STORAGE_MODE   : ${{ inputs.storage_mode }}
+      OPEN_INSTANCE  : ${{ inputs.open_instance }}
+      DOMAIN_NAME    : ${{ inputs.domain_name }}
+      HOSTED_ZONE_ID : ${{ inputs.hosted_zone_id }}
+      CERTIFICATE_ARN: ${{ inputs.certificate_arn }}
+      IMAGE_TAG      : ${{ needs.build-image.outputs.tag }}
+      ROLE_ARN       : ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
+      ACCESS_TOKEN   : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN }}
+      SEND__STORAGE_MODE: memory                   # the legacy in-process side of the parity gate
     outputs:
-      function_url: ${{ steps.outputs.outputs.function_url }}
-      public_url  : ${{ steps.outputs.outputs.public_url }}
+      deployed       : ${{ steps.gate.outputs.deployed }}
+      function_url   : ${{ steps.outputs.outputs.function_url }}
+      public_url     : ${{ steps.outputs.outputs.public_url }}
       distribution_id: ${{ steps.outputs.outputs.distribution_id }}
     steps:
+      - name: Gate — role configured, token policy honoured
+        id: gate
+        run: |
+          if [ -z "$ROLE_ARN" ]; then
+            echo "deployed=false" >> "$GITHUB_OUTPUT"
+            echo "::notice::AWS_DEPLOY_ROLE_ARN is not set in the '$STAGE' GitHub Environment — deploy skipped (tests + image build ran)"
+            exit 0
+          fi
+          if [ -z "$ACCESS_TOKEN" ] && [ "$OPEN_INSTANCE" != "true" ]; then
+            echo "::error::SGIT_VAULTS__ACCESS_TOKEN is not set in the '$STAGE' GitHub Environment. Refusing to deploy an OPEN instance by accident; pass open_instance=true to do it on purpose."
+            exit 1
+          fi
+          if [ "$OPEN_INSTANCE" = "true" ]; then echo "::warning::Deploying '$STAGE' as an OPEN instance (open_instance=true): every route is unauthenticated."; fi
+          echo "deployed=true" >> "$GITHUB_OUTPUT"
       - uses: actions/checkout@v4
+        if: steps.gate.outputs.deployed == 'true'
       - uses: aws-actions/configure-aws-credentials@v4
+        if: steps.gate.outputs.deployed == 'true'
         with:
           role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
       - uses: actions/download-artifact@v4
+        if: steps.gate.outputs.deployed == 'true'
         with:
           name: image-${{ inputs.stage }}
           path: /tmp
       - name: Push image to ECR
+        if: steps.gate.outputs.deployed == 'true'
         id: ecr
         run: |
           docker load < /tmp/image.tar.gz
           ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
-          REPO_URI=$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO
-          aws ecr describe-repositories --repository-names $ECR_REPO >/dev/null 2>&1 || aws ecr create-repository --repository-name $ECR_REPO --image-scanning-configuration scanOnPush=true >/dev/null
-          aws ecr get-login-password | docker login --username AWS --password-stdin $ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com
-          docker tag $ECR_REPO:${{ needs.build-image.outputs.tag }} $REPO_URI:${{ needs.build-image.outputs.tag }}
-          docker push $REPO_URI:${{ needs.build-image.outputs.tag }}
-          echo "image_uri=$REPO_URI:${{ needs.build-image.outputs.tag }}" >> "$GITHUB_OUTPUT"
+          REPO_URI="$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPO"
+          aws ecr describe-repositories --repository-names "$ECR_REPO" >/dev/null 2>&1 || aws ecr create-repository --repository-name "$ECR_REPO" --image-scanning-configuration scanOnPush=true >/dev/null
+          aws ecr get-login-password | docker login --username AWS --password-stdin "$ACCOUNT.dkr.ecr.$AWS_REGION.amazonaws.com"
+          docker tag "$ECR_REPO:$IMAGE_TAG" "$REPO_URI:$IMAGE_TAG"
+          docker push "$REPO_URI:$IMAGE_TAG"
+          echo "image_uri=$REPO_URI:$IMAGE_TAG" >> "$GITHUB_OUTPUT"
       - name: CloudFormation deploy
+        if: steps.gate.outputs.deployed == 'true'
+        env:
+          IMAGE_URI: ${{ steps.ecr.outputs.image_uri }}
         run: |
-          if [ -z "${{ secrets.ACCESS_TOKEN }}" ]; then echo "::warning::ACCESS_TOKEN secret not set for stage ${{ inputs.stage }} — deploying an OPEN instance"; fi
+          if [ "$OPEN_INSTANCE" = "true" ]; then ACCESS_TOKEN=""; fi
           aws cloudformation deploy --template-file deploy/aws/lambda.cfn.yml \
-            --stack-name $STACK_NAME --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset \
-            --parameter-overrides ImageUri=${{ steps.ecr.outputs.image_uri }} Stage=${{ inputs.stage }} \
-                                  StorageMode=${{ inputs.storage_mode }} AccessToken="${{ secrets.ACCESS_TOKEN }}" \
-                                  DomainName="${{ inputs.domain_name }}" HostedZoneId="${{ inputs.hosted_zone_id }}" CertificateArn="${{ inputs.certificate_arn }}"
+            --stack-name "$STACK_NAME" --capabilities CAPABILITY_NAMED_IAM --no-fail-on-empty-changeset \
+            --parameter-overrides "ImageUri=$IMAGE_URI" "Stage=$STAGE" "StorageMode=$STORAGE_MODE" \
+                                  "AccessToken=$ACCESS_TOKEN" "DomainName=$DOMAIN_NAME" \
+                                  "HostedZoneId=$HOSTED_ZONE_ID" "CertificateArn=$CERTIFICATE_ARN"
       - name: Read stack outputs
+        if: steps.gate.outputs.deployed == 'true'
         id: outputs
         run: |
-          q() { aws cloudformation describe-stacks --stack-name $STACK_NAME --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
+          q() { aws cloudformation describe-stacks --stack-name "$STACK_NAME" --query "Stacks[0].Outputs[?OutputKey=='$1'].OutputValue" --output text; }
           echo "function_url=$(q FunctionUrl)"       >> "$GITHUB_OUTPUT"
           echo "public_url=$(q PublicUrl)"           >> "$GITHUB_OUTPUT"
           echo "distribution_id=$(q DistributionId)" >> "$GITHUB_OUTPUT"
-          echo "Deployed ${{ inputs.stage }}: $(q PublicUrl)"
+          echo "Deployed $STAGE: $(q PublicUrl)"
 
-  verify:
-    name: Smoke + parity gate against the live stack
-    runs-on: ubuntu-latest
-    needs: [deploy]
-    env:
-      SEND__STORAGE_MODE: memory                     # the legacy in-process side of the parity gate
-    steps:
-      - uses: actions/checkout@v4
+      # ---- QA against the live stack (the deployed-target smoke suite + the sgit parity gate) ----
       - uses: actions/setup-python@v5
+        if: steps.gate.outputs.deployed == 'true'
         with:
           python-version: '3.12'
-      - run: pip install -r tests/regression/requirements.txt
+      - if: steps.gate.outputs.deployed == 'true'
+        run: pip install -r tests/regression/requirements.txt
       - name: Smoke suite (the deployed-target suite; API-only, no UI root)
+        if: steps.gate.outputs.deployed == 'true'
         env:
-          SG_BASE_URL    : ${{ needs.deploy.outputs.function_url }}
-          SG_ACCESS_TOKEN: ${{ secrets.ACCESS_TOKEN }}
+          SG_BASE_URL    : ${{ steps.outputs.outputs.function_url }}
+          SG_ACCESS_TOKEN: ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN }}
           SG_EXPECT_UI   : 'false'
         run: python -m pytest tests/deploy -q -rs --tb=short
       - name: Parity gate — the API as it runs today (in-process) vs the deployed stack (origin, not edge)
+        if: steps.gate.outputs.deployed == 'true'
         env:
           SG_LEGACY_URL: inprocess
-          SG_NEW_URL   : ${{ needs.deploy.outputs.function_url }}
-          SG_NEW_TOKEN : ${{ secrets.ACCESS_TOKEN }}
+          SG_NEW_URL   : ${{ steps.outputs.outputs.function_url }}
+          SG_NEW_TOKEN : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN }}
         run: python -m pytest tests/regression -q -rs --tb=short
       - name: Parity gate — via the edge too, when a custom domain is configured
-        if: needs.deploy.outputs.distribution_id != ''
+        if: steps.gate.outputs.deployed == 'true' && steps.outputs.outputs.distribution_id != ''
         env:
           SG_LEGACY_URL: inprocess
-          SG_NEW_URL   : ${{ needs.deploy.outputs.public_url }}
-          SG_NEW_TOKEN : ${{ secrets.ACCESS_TOKEN }}
+          SG_NEW_URL   : ${{ steps.outputs.outputs.public_url }}
+          SG_NEW_TOKEN : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN }}
         run: python -m pytest tests/regression -q -rs --tb=short -k parity
 
-  cloudfront:
-    name: CloudFront distribution enabled?
-    runs-on: ubuntu-latest
-    needs: [deploy, verify]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-      - name: Check, and enable if disabled
-        run: bash deploy/aws/cloudfront_ensure_enabled.sh "${{ needs.deploy.outputs.distribution_id }}" "$STACK_NAME"
+      # ---- the extra deployment step: is the CloudFront distribution enabled? (enables it if not) ----
+      - name: CloudFront distribution enabled?
+        if: steps.gate.outputs.deployed == 'true'
+        env:
+          DISTRIBUTION_ID: ${{ steps.outputs.outputs.distribution_id }}
+        run: bash deploy/aws/cloudfront_ensure_enabled.sh "$DISTRIBUTION_ID" "$STACK_NAME"
 
   record:
     name: Deployment record
     runs-on: ubuntu-latest
-    needs: [deploy, verify, cloudfront]
-    if: always() && needs.deploy.result == 'success'
+    needs: [deploy]
+    if: always() && needs.deploy.result == 'success' && needs.deploy.outputs.deployed == 'true'
+    env:
+      STAGE       : ${{ inputs.stage }}
+      PUBLIC_URL  : ${{ needs.deploy.outputs.public_url }}
+      FUNCTION_URL: ${{ needs.deploy.outputs.function_url }}
     steps:
       - run: |
           {
-            echo "## sgit vaults API — stage \`${{ inputs.stage }}\`"
-            echo "- Public URL: ${{ needs.deploy.outputs.public_url }}"
-            echo "- Function URL: ${{ needs.deploy.outputs.function_url }}"
-            echo "- Verify: ${{ needs.verify.result }} · CloudFront: ${{ needs.cloudfront.result }}"
+            echo "## sgit vaults API — stage \`$STAGE\`"
+            echo "- Public URL: $PUBLIC_URL"
+            echo "- Function URL: $FUNCTION_URL"
+            echo "- Smoke suite, parity gate and CloudFront check: passed (they run in the deploy job; a failure fails it)"
           } >> "$GITHUB_STEP_SUMMARY"

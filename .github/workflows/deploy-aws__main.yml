@@ -3,11 +3,15 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+    inputs:
+      open_instance:
+        description: 'Deploy with NO access token (every route open). Only on purpose.'
+        type: boolean
+        default: false
 jobs:
   main:
     uses: ./.github/workflows/deploy-aws-lambda.yml
     with:
       stage: main
-    secrets:
-      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-      ACCESS_TOKEN       : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN__MAIN }}
+      open_instance: ${{ inputs.open_instance == true }}
+    secrets: inherit      # AWS_DEPLOY_ROLE_ARN + SGIT_VAULTS__ACCESS_TOKEN come from the 'main' GitHub Environment

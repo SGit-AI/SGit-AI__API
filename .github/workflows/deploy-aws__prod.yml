@@ -2,9 +2,22 @@ name: Deploy AWS — prod
 on:
   workflow_dispatch:
     inputs:
-      domain_name:     { description: 'Custom domain (e.g. vaults.sgit.ai); empty = Function URL only', required: false, default: '' }
-      hosted_zone_id:  { description: 'Route53 hosted zone id for the domain', required: false, default: '' }
-      certificate_arn: { description: 'ACM certificate ARN in us-east-1', required: false, default: '' }
+      domain_name:
+        description: 'Custom domain (e.g. vaults.sgit.ai); empty = Function URL only'
+        required: false
+        default: ''
+      hosted_zone_id:
+        description: 'Route53 hosted zone id for the domain'
+        required: false
+        default: ''
+      certificate_arn:
+        description: 'ACM certificate ARN in us-east-1'
+        required: false
+        default: ''
+      open_instance:
+        description: 'Deploy with NO access token (every route open). Only on purpose.'
+        type: boolean
+        default: false
 jobs:
   prod:
     uses: ./.github/workflows/deploy-aws-lambda.yml
@@ -13,6 +26,5 @@ jobs:
       domain_name    : ${{ inputs.domain_name }}
       hosted_zone_id : ${{ inputs.hosted_zone_id }}
       certificate_arn: ${{ inputs.certificate_arn }}
-    secrets:
-      AWS_DEPLOY_ROLE_ARN: ${{ secrets.AWS_DEPLOY_ROLE_ARN }}
-      ACCESS_TOKEN       : ${{ secrets.SGIT_VAULTS__ACCESS_TOKEN__PROD }}
+      open_instance  : ${{ inputs.open_instance == true }}
+    secrets: inherit      # AWS_DEPLOY_ROLE_ARN + SGIT_VAULTS__ACCESS_TOKEN come from the 'prod' GitHub Environment (required reviewers there)

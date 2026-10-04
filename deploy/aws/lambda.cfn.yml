@@ -91,6 +91,9 @@ Resources:
     Type: AWS::IAM::Role
     Properties:
       RoleName: !Sub 'sgit-vaults-lambda--${Stage}'
+      # The ceiling (created by github-oidc-role.cfn.yml). The deploy role may only create or edit
+      # this role WITH this boundary attached, so nothing it writes here can exceed logs + vault objects.
+      PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/sgit-vaults-lambda-boundary'
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
         Statement:

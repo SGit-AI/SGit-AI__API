@@ -1,9 +1,11 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Description: >-
-  One-time bootstrap: the GitHub OIDC identity provider + the least-privilege role that this
-  repository's deploy workflows assume. No long-lived AWS keys anywhere. Deploy ONCE per
-  account with admin credentials, then set the RoleArn output as the AWS_DEPLOY_ROLE_ARN
-  GitHub Actions secret.
+  Bootstrap, once per stage: the GitHub OIDC identity provider (first stage only), the
+  permissions boundary every sgit-vaults Lambda execution role must carry (first stage only),
+  and ONE least-privilege deploy role for ONE stage, assumable only by jobs running inside that
+  stage's GitHub Environment. No long-lived AWS keys anywhere. Deploy three times
+  (Stage=dev, main, prod) with admin credentials, then set each RoleArn output as the
+  AWS_DEPLOY_ROLE_ARN secret of the matching GitHub Environment.
 
 Parameters:
 
@@ -15,14 +17,26 @@ Parameters:
     Type: String
     Default: SGit-AI__API
 
+  Stage:
+    Type: String
+    AllowedValues: [dev, main, prod]
+    Description: The one stage this role may deploy. One role per stage; a dev job never holds prod authority.
+
   CreateOidcProvider:
     Type: String
-    Default: 'true'
+    Default: 'false'
     AllowedValues: ['true', 'false']
-    Description: Set false if the account already has the token.actions.githubusercontent.com provider (one per account).
+    Description: "'true' on the FIRST stack only (one token.actions.githubusercontent.com provider per account); 'false' if the account already has it."
+
+  CreateSharedResources:
+    Type: String
+    Default: 'false'
+    AllowedValues: ['true', 'false']
+    Description: "'true' on the FIRST stack only — creates the shared permissions boundary policy sgit-vaults-lambda-boundary."
 
 Conditions:
   MakeProvider: !Equals [!Ref CreateOidcProvider, 'true']
+  MakeShared:   !Equals [!Ref CreateSharedResources, 'true']
 
 Resources:
 
@@ -34,10 +48,34 @@ Resources:
       ClientIdList: [sts.amazonaws.com]
       ThumbprintList: [6938fd4d98bab03faadb97b34396831e3780aea1]
 
+  # The ceiling for every Lambda execution role the deploy roles may create or edit. Whatever a
+  # deploy role writes into sgit-vaults-lambda--<stage>, the effective permissions can never
+  # exceed this: logs for its own log groups and objects in the sgit-vaults buckets. This is
+  # what stops "write an admin policy onto the function's role and run code as it".
+  LambdaBoundary:
+    Type: AWS::IAM::ManagedPolicy
+    Condition: MakeShared
+    Properties:
+      ManagedPolicyName: sgit-vaults-lambda-boundary
+      Description: Permissions boundary for sgit-vaults-lambda--* execution roles (the ceiling, not a grant)
+      PolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Sid: Logs
+            Effect: Allow
+            Action: [logs:CreateLogGroup, logs:CreateLogStream, logs:PutLogEvents]
+            Resource: !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-*'
+          - Sid: VaultObjects
+            Effect: Allow
+            Action: [s3:GetObject, s3:PutObject, s3:DeleteObject, s3:ListBucket, s3:GetBucketLocation]
+            Resource:
+              - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*'
+              - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*/*'
+
   DeployRole:
     Type: AWS::IAM::Role
     Properties:
-      RoleName: sgit-vaults-github-deploy
+      RoleName: !Sub 'sgit-vaults-github-deploy--${Stage}'
       MaxSessionDuration: 3600
       AssumeRolePolicyDocument:
         Version: '2012-10-17'
@@ -52,33 +90,29 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-              # Only these refs/environments of this one repository may assume the role:
-              # the three GitHub Environments dev / main / prod (a job that deploys runs inside one;
-              # the token's subject then carries environment:<name>, not the branch ref).
-              StringLike:
-                token.actions.githubusercontent.com:sub:
-                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:dev'
-                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:main'
-                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:prod'
+                # Exactly one subject: a job of this repository running inside THIS stage's GitHub
+                # Environment. A fork, a pull request, another branch's job outside the
+                # environment, or the other two stages' jobs cannot assume this role.
+                token.actions.githubusercontent.com:sub: !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:${Stage}'
       Policies:
-        - PolicyName: sgit-vaults-deploy
+        - PolicyName: !Sub 'sgit-vaults-deploy--${Stage}'
           PolicyDocument:
             Version: '2012-10-17'
             Statement:
-              # the three stage stacks and the bootstrap stack itself
-              - Sid: Stacks
+              # this stage's stack only (never the bootstrap stack, never another stage)
+              - Sid: Stack
                 Effect: Allow
                 Action: [cloudformation:*]
-                Resource: !Sub 'arn:aws:cloudformation:*:${AWS::AccountId}:stack/sgit-vaults-*/*'
-              # the function, its URL and its logs
+                Resource: !Sub 'arn:aws:cloudformation:*:${AWS::AccountId}:stack/sgit-vaults-api--${Stage}/*'
+              # this stage's function, its URL config and its log group
               - Sid: LambdaAndLogs
                 Effect: Allow
                 Action: [lambda:*, logs:*]
                 Resource:
-                  - !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:sgit-vaults-*'
-                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-*'
-                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-*:*'
-              # the image registry (one repository) + the auth token call, which is resource-less
+                  - !Sub 'arn:aws:lambda:*:${AWS::AccountId}:function:sgit-vaults-api--${Stage}'
+                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-api--${Stage}'
+                  - !Sub 'arn:aws:logs:*:${AWS::AccountId}:log-group:/aws/lambda/sgit-vaults-api--${Stage}:*'
+              # the image registry (one repository, shared by the stages) + the resource-less auth call
               - Sid: Ecr
                 Effect: Allow
                 Action: [ecr:*]
@@ -87,22 +121,53 @@ Resources:
                 Effect: Allow
                 Action: [ecr:GetAuthorizationToken, ecr:DescribeRepositories]
                 Resource: '*'
-              # the per-stage data buckets (create, configure; objects stay the function's business)
-              - Sid: Buckets
+              # this stage's data bucket: create and configure it. NO object actions (the vault
+              # ciphertext is the function's business), NO bucket policy / ACL / public-access changes.
+              - Sid: Bucket
                 Effect: Allow
-                Action: [s3:CreateBucket, s3:DeleteBucket, s3:Get*, s3:List*, s3:Put*]
-                Resource:
-                  - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*'
-                  - !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*/*'
-              # the function's execution role (create/attach/pass), nothing else in IAM
-              - Sid: ExecutionRole
+                Action: [s3:CreateBucket, s3:DeleteBucket, s3:ListBucket, s3:GetBucket*,
+                         s3:GetEncryptionConfiguration, s3:GetLifecycleConfiguration, s3:GetAccelerateConfiguration,
+                         s3:GetReplicationConfiguration, s3:GetIntelligentTieringConfiguration,
+                         s3:PutEncryptionConfiguration, s3:PutBucketTagging, s3:PutBucketVersioning,
+                         s3:PutBucketOwnershipControls, s3:PutLifecycleConfiguration, s3:PutBucketPublicAccessBlock]
+                Resource: !Sub 'arn:aws:s3:::${AWS::AccountId}--sgit-vaults--*--${Stage}'
+              # the function's execution role — this stage's only — and ONLY with the boundary attached.
+              # Without the boundary condition a deploy job could write an admin policy onto the
+              # execution role and run code as it; with it, nothing it writes can exceed the ceiling.
+              - Sid: ExecutionRoleWrite
                 Effect: Allow
-                Action: [iam:CreateRole, iam:DeleteRole, iam:GetRole, iam:PassRole, iam:UpdateRole,
-                         iam:PutRolePolicy, iam:DeleteRolePolicy, iam:GetRolePolicy,
-                         iam:AttachRolePolicy, iam:DetachRolePolicy, iam:TagRole, iam:UntagRole]
-                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-*'
+                Action: [iam:CreateRole, iam:PutRolePolicy, iam:AttachRolePolicy, iam:PutRolePermissionsBoundary]
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-lambda--${Stage}'
+                Condition:
+                  StringEquals:
+                    iam:PermissionsBoundary: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/sgit-vaults-lambda-boundary'
+              - Sid: ExecutionRoleManage
+                Effect: Allow
+                Action: [iam:GetRole, iam:DeleteRole, iam:UpdateRole, iam:UpdateRoleDescription, iam:TagRole, iam:UntagRole,
+                         iam:GetRolePolicy, iam:DeleteRolePolicy, iam:DetachRolePolicy,
+                         iam:ListRolePolicies, iam:ListAttachedRolePolicies, iam:UpdateAssumeRolePolicy]
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-lambda--${Stage}'
+              - Sid: ExecutionRolePass
+                Effect: Allow
+                Action: iam:PassRole
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-lambda--${Stage}'
+                Condition:
+                  StringEquals:
+                    iam:PassedToService: lambda.amazonaws.com
+              # a deploy role must never be able to edit any deploy role (itself included) …
+              - Sid: NoSelfEdits
+                Effect: Deny
+                Action: ['iam:*']
+                Resource: !Sub 'arn:aws:iam::${AWS::AccountId}:role/sgit-vaults-github-deploy--*'
+              # … nor weaken or remove the boundary, nor create any policy of its own
+              - Sid: NoBoundaryTampering
+                Effect: Deny
+                Action: [iam:DeleteRolePermissionsBoundary, iam:DeleteUserPermissionsBoundary,
+                         iam:CreatePolicy, iam:CreatePolicyVersion, iam:DeletePolicy, iam:DeletePolicyVersion, iam:SetDefaultPolicyVersion]
+                Resource: '*'
               # CloudFront + Route53 for the optional custom domain, and the "is the distribution
-              # enabled" check step. CloudFront has no resource-level scoping for most calls.
+              # enabled" check step. CloudFront has no resource-level scoping for most calls — this is
+              # the one account-wide grant left, and it is listed as such in the README.
               - Sid: Edge
                 Effect: Allow
                 Action: [cloudfront:*, route53:ChangeResourceRecordSets, route53:GetChange, route53:ListResourceRecordSets, route53:ListHostedZones, acm:ListCertificates, acm:DescribeCertificate]
@@ -114,5 +179,10 @@ Resources:
 
 Outputs:
   RoleArn:
-    Description: Set this as the AWS_DEPLOY_ROLE_ARN GitHub Actions secret
+    Description: Set this as the AWS_DEPLOY_ROLE_ARN secret of the GitHub Environment named like the Stage
     Value: !GetAtt DeployRole.Arn
+  Stage:
+    Value: !Ref Stage
+  BoundaryArn:
+    Description: The permissions boundary every sgit-vaults-lambda--* role must carry (lambda.cfn.yml sets it)
+    Value: !Sub 'arn:aws:iam::${AWS::AccountId}:policy/sgit-vaults-lambda-boundary'

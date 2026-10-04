@@ -4,7 +4,7 @@
 Rule: if it is not listed here, it does not exist. Anything described elsewhere that is not
 here must be labelled "PROPOSED — does not exist yet."
 
-**Last verified:** 2026-10-04 (security audit added; code unchanged). Previously 2026-09-30 (code unchanged since 18 Aug; docs/packs added — see Docs table)
+**Last verified:** 2026-10-04 (security audit added, then verified with deps installed — six origin leads confirmed; deploy lane hardened: per-stage boundary-conditioned OIDC roles, fail-closed token policy, policy tests in `tests/unit/deploy/`; no API code). Previously 2026-09-30 (code unchanged since 18 Aug; docs/packs added — see Docs table)
 
 ---
 
@@ -67,7 +67,7 @@ existing tag** — the repo is seeded with `v0.1.0`.
 | Extraction dev pack (00–05) | `library/dev_packs/v0.33.59__sgit-api-extraction/` |
 | **vaults.sgit.ai dev pack (00–05 + evolution map)** — supersedes the extraction pack's discipline; PROPOSED, nothing implemented | `library/dev_packs/v0.1.5__vaults-sgit-ai/` |
 | Architect review of the SG/API across both repos (30 Sep) | `team/roles/architect/reviews/09/30/` |
-| **Security audit of the SG/API refactoring (4 Oct)**: deploy lane (1 confirmed high: the OIDC deploy role can self-escalate to account admin, plus 3 leads) and the extraction set at origin `5d50ae8` (12 needs-validation leads, source-only) | `team/roles/appsec/reviews/10/04/v0.1.10__security-audit__sg-api/` |
+| **Security audit of the SG/API refactoring (4 Oct)**: deploy lane (1 confirmed high, fixed same day, plus 3 leads, fixed) and the extraction set at origin `5d50ae8` (12 leads; **6 confirmed** with the pinned deps installed — see `VERIFICATION.md`; they move with the code and are on the step 1.4+ fix list) | `team/roles/appsec/reviews/10/04/v0.1.10__security-audit__sg-api/` |
 | Vendored `security-audit` skill (Cloudflare, MIT, pinned `c1c8a8c`): agent tooling, not product code | `.claude/skills/security-audit/` |
 | Memo response: the Villager transformation (30 Sep) | `team/humans/dinis_cruz/claude-code-web/09/30/` |
 | Agent guidance | `.claude/CLAUDE.md` |

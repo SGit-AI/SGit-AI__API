@@ -2,73 +2,92 @@
 
 One image, three Lambda stacks — `dev`, `main`, `prod` — mirroring the three User Lambdas the
 origin repo deploys (`user-dev` on push to `dev`, `user-main` on push to `main`, `user-prod`
-by manual dispatch). GitHub OIDC only; no AWS keys anywhere.
+by manual dispatch). GitHub OIDC only; no AWS keys anywhere. **One deploy role per stage**, each
+assumable only from that stage's GitHub Environment, each able to touch that stage's resources only.
 
-| Stage | Trigger | Stack | Function | Bucket |
-|---|---|---|---|---|
-| dev  | push to `dev` (or dispatch) | `sgit-vaults-api--dev`  | `sgit-vaults-api--dev`  | `{account}--sgit-vaults--{region}--dev` |
-| main | push to `main` (or dispatch) | `sgit-vaults-api--main` | `sgit-vaults-api--main` | `…--main` |
-| prod | manual dispatch, GitHub Environment `prod` (add required reviewers there) | `sgit-vaults-api--prod` | `sgit-vaults-api--prod` | `…--prod` |
+| Stage | Trigger | GitHub Environment | Role | Stack / function | Bucket |
+|---|---|---|---|---|---|
+| dev  | push to `dev` (or dispatch) | `dev` | `sgit-vaults-github-deploy--dev` | `sgit-vaults-api--dev` | `{account}--sgit-vaults--{region}--dev` |
+| main | push to `main` (or dispatch) | `main` | `…--main` | `…--main` | `…--main` |
+| prod | manual dispatch | `prod` (add required reviewers) | `…--prod` | `…--prod` | `…--prod` |
 
-Each run: unit tests → build the API-only image → self-contained boot check (no network) →
-push to ECR → CloudFormation deploy → **smoke suite** against the Function URL → **parity gate**
-(the API as it runs today, in-process, vs the deployed stack; and via the edge when a custom
-domain exists) → **CloudFront enabled check** (enables a disabled distribution, warns on any
-error-page rewrite) → a deployment record in the run summary.
+Each run: unit tests → build the API-only image → self-contained boot check (no network) → then,
+**in one job inside the stage's Environment**: push to ECR → CloudFormation deploy → **smoke suite**
+against the Function URL → **parity gate** (the API as it runs today, in-process, vs the deployed
+stack; and via the edge when a custom domain exists) → **CloudFront enabled check** (enables a
+disabled distribution, warns on any error-page rewrite) → a deployment record in the run summary.
+One job holds the credentials, so prod's required reviewers are asked exactly once per deploy.
 
-## One-time account setup (you, ~10 minutes, admin credentials)
+## One-time account setup (you, ~15 minutes, admin credentials)
 
-### 1. Create the deploy role — the exact IAM the pipeline needs
+### 1. Create the deploy roles — the exact IAM the pipeline needs
+
+Three stacks from one template, one per stage. The first one also creates the GitHub OIDC
+provider and the shared permissions boundary:
 
 ```bash
-aws cloudformation deploy \
-  --template-file deploy/aws/github-oidc-role.cfn.yml \
-  --stack-name sgit-vaults-github-oidc \
-  --capabilities CAPABILITY_NAMED_IAM
-# if the account already has the GitHub OIDC provider (only one per account):
-#   --parameter-overrides CreateOidcProvider=false
-aws cloudformation describe-stacks --stack-name sgit-vaults-github-oidc \
-  --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' --output text
+aws cloudformation deploy --template-file deploy/aws/github-oidc-role.cfn.yml \
+  --stack-name sgit-vaults-github-oidc--dev  --capabilities CAPABILITY_NAMED_IAM \
+  --parameter-overrides Stage=dev CreateOidcProvider=true CreateSharedResources=true
+# CreateOidcProvider=false if the account already has the token.actions.githubusercontent.com provider
+aws cloudformation deploy --template-file deploy/aws/github-oidc-role.cfn.yml \
+  --stack-name sgit-vaults-github-oidc--main --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Stage=main
+aws cloudformation deploy --template-file deploy/aws/github-oidc-role.cfn.yml \
+  --stack-name sgit-vaults-github-oidc--prod --capabilities CAPABILITY_NAMED_IAM --parameter-overrides Stage=prod
+for s in dev main prod; do aws cloudformation describe-stacks --stack-name sgit-vaults-github-oidc--$s \
+  --query 'Stacks[0].Outputs[?OutputKey==`RoleArn`].OutputValue' --output text; done
 ```
 
-What the role is, precisely (`deploy/aws/github-oidc-role.cfn.yml`):
+What each role is, precisely (`deploy/aws/github-oidc-role.cfn.yml`; pinned by
+`tests/unit/deploy/test_deploy_templates.py`, which fails if any of this regresses):
 
-- **Trust:** `sts:AssumeRoleWithWebIdentity` from GitHub's OIDC provider, **only** for
-  `repo:SGit-AI/SGit-AI__API` and only from three subjects: `environment:dev`, `environment:main`,
-  `environment:prod` (the deploy job runs inside the stage's GitHub Environment, so the token
-  carries that claim). A fork, a pull request, or a job outside those environments cannot assume it. Sessions last at most one hour and are minted per job; nothing is stored.
-- **Permissions, all name-scoped where the service allows it:**
-  - CloudFormation on stacks named `sgit-vaults-*`
-  - Lambda + CloudWatch Logs on `sgit-vaults-*` functions and their log groups
-  - ECR on the one repository `sgit-vaults-api` (+ the resource-less `GetAuthorizationToken`)
-  - S3 bucket-level actions on `{account}--sgit-vaults--*` (create/configure); object reads
-    and writes are the *function's* role, not this one
-  - IAM create/attach/pass on roles named `sgit-vaults-*` (the function's execution role)
+- **Trust:** `sts:AssumeRoleWithWebIdentity` from GitHub's OIDC provider, for exactly one
+  subject: `repo:SGit-AI/SGit-AI__API:environment:<stage>`. A fork, a pull request, a job outside
+  that Environment, or another stage's job cannot assume it. Sessions last at most one hour and
+  are minted per job; nothing is stored.
+- **Permissions, all scoped to the stage's own names:**
+  - CloudFormation on the one stack `sgit-vaults-api--<stage>` (not the bootstrap stacks)
+  - Lambda + CloudWatch Logs on `sgit-vaults-api--<stage>` and its log group
+  - ECR on the one shared repository `sgit-vaults-api` (+ the resource-less `GetAuthorizationToken`)
+  - S3 **bucket-level** create/configure on `{account}--sgit-vaults--*--<stage>`: no object
+    actions (vault ciphertext is the function's business), no bucket policy / ACL / public-access changes
+  - IAM on the one execution role `sgit-vaults-lambda--<stage>`, and creating or editing it is
+    allowed **only with the permissions boundary `sgit-vaults-lambda-boundary` attached**; `PassRole`
+    only to `lambda.amazonaws.com`
   - CloudFront + the three Route53 record actions + ACM list/describe (custom domain and the
-    enabled-check; CloudFront has no resource-level scoping)
-- **What it cannot do:** touch any resource not named `sgit-vaults-*`, create users or keys,
-  read secrets, reach the origin repo's `sg-send-*` / `sgraph-ai-app-send--*` resources.
+    enabled-check; CloudFront has no resource-level scoping, so this is the one account-wide grant)
+- **Explicit denies:** any `iam:*` on any `sgit-vaults-github-deploy--*` role (a deploy role can
+  never edit itself or a sibling), and removing or rewriting the boundary or any policy.
+- **The boundary** (`sgit-vaults-lambda-boundary`, the ceiling for every execution role): logs
+  for `/aws/lambda/sgit-vaults-*` and objects in the `sgit-vaults` buckets. Whatever a deploy job
+  writes into the execution role, the function can never do more than that.
+- **What a role cannot do:** become account admin (the 4 Oct 2026 security audit found the
+  previous single-role version could, by rewriting its own policy — fixed and pinned by test),
+  reach another stage's stack / function / bucket / token, read or write vault objects, create
+  users or keys, read secrets, or touch the origin repo's `sg-send-*` resources.
 
 ### 2. Why this is more secure than API keys
 
 The pipeline never holds a credential. Each job presents a short-lived GitHub-signed token;
-AWS checks the repository and ref in it and issues a one-hour session for this role only.
-There is nothing to leak, rotate, or revoke besides the role itself, and CloudTrail records
-every call under the role with the GitHub run as the session name. The origin repo's pipeline
-used four long-lived secrets (`AWS_ACCESS_KEY_ID` …); this one uses zero.
+AWS checks the repository and the Environment in it and issues a one-hour session for that
+stage's role only. There is nothing to leak, rotate, or revoke besides the role itself, and
+CloudTrail records every call under the role with the GitHub run as the session name. The
+origin repo's pipeline used four long-lived secrets (`AWS_ACCESS_KEY_ID` …); this one uses zero.
 
-### 3. GitHub secrets (Settings → Secrets and variables → Actions)
+### 3. GitHub Environments and their secrets (Settings → Environments)
 
-| Secret | Value | Required |
+Create the three Environments `dev`, `main`, `prod`, and in **each** add the same two
+**Environment secrets** (not repository secrets — the deploy job reads them inside the Environment,
+which is what keeps prod's values out of dev's reach):
+
+| Environment secret | Value | Required |
 |---|---|---|
-| `AWS_DEPLOY_ROLE_ARN` | the `RoleArn` output from step 1 | yes — without it every deploy job skips and says so |
-| `SGIT_VAULTS__ACCESS_TOKEN__DEV` | the dev stage's access token (`openssl rand -hex 32`) | no — empty deploys an **open** instance, loudly |
-| `SGIT_VAULTS__ACCESS_TOKEN__MAIN` | | same |
-| `SGIT_VAULTS__ACCESS_TOKEN__PROD` | | same; put it in the `prod` Environment's secrets |
+| `AWS_DEPLOY_ROLE_ARN` | that stage's `RoleArn` output from step 1 | yes — without it the deploy job stops and says so (tests + image build still run) |
+| `SGIT_VAULTS__ACCESS_TOKEN` | that stage's API access token (`openssl rand -hex 32`) | yes — an empty token **fails the deploy**. To run a stage open on purpose, dispatch with `open_instance=true` |
 
-Then create the GitHub Environment `prod` (Settings → Environments) with required reviewers:
-that is what makes the prod deploy a two-person act. The role's trust policy only accepts the
-`environment:prod` subject for that stage.
+On `prod`, add required reviewers and a deployment-branch rule (`main` only): that is what makes
+the prod deploy a two-person act, and the role's trust policy only accepts the `environment:prod`
+subject for that stage.
 
 ### 4. Region
 
@@ -82,8 +101,12 @@ Until phase-1 step 1.3 lands the code in this repo, the image serves the vault A
 `ORIGIN_COMMIT` in the Dockerfile — PyPI only carries major releases) — the same app
 that runs on `dev.send.sgraph.ai`, booted standalone, API only (no UI overlay, no Send UIs).
 `deploy/docker/serve.py` switches to `sgit_vaults` the moment it is importable; the pipeline,
-the templates, the gates and the role do not change. That is the point of building the lane
+the templates, the gates and the roles do not change. That is the point of building the lane
 first: the move lands into a pipeline that is already proven live.
+
+The security audit of 4 Oct 2026 (`team/roles/appsec/reviews/10/04/`) confirmed defects in
+that origin package which this lane inherits until the move fixes them — read its
+`VERIFICATION.md` before pointing real users at a stage.
 
 ## Custom domain (`vaults.sgit.ai`)
 
@@ -99,7 +122,7 @@ passes status codes through, and the enabled-check step warns if that ever chang
 aws cloudformation delete-stack --stack-name sgit-vaults-api--dev
 ```
 removes everything except the data bucket (retained by policy — empty and delete it yourself
-if you mean it). The ECR repository and the OIDC role are shared across stages and stay.
+if you mean it). The ECR repository, the boundary and the deploy roles are bootstrap resources and stay.
 
 ## Run the gates yourself against any deployment
 
@@ -107,4 +130,5 @@ if you mean it). The ECR repository and the OIDC role are shared across stages a
 pip install -r tests/regression/requirements.txt
 SG_BASE_URL=https://<function-url>/ SG_ACCESS_TOKEN=<token> SG_EXPECT_UI=false  python -m pytest tests/deploy -q
 SG_LEGACY_URL=inprocess SG_NEW_URL=https://<function-url>/ SG_NEW_TOKEN=<token> python -m pytest tests/regression -q
+python -m pytest tests/unit/deploy -q          # the IAM / workflow policy invariants (no AWS needed)
 ```
