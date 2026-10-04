@@ -34,9 +34,9 @@ aws cloudformation describe-stacks --stack-name sgit-vaults-github-oidc \
 What the role is, precisely (`deploy/aws/github-oidc-role.cfn.yml`):
 
 - **Trust:** `sts:AssumeRoleWithWebIdentity` from GitHub's OIDC provider, **only** for
-  `repo:SGit-AI/SGit-AI__API` and only from three subjects: `ref:refs/heads/dev`,
-  `ref:refs/heads/main`, `environment:prod`. A fork, another branch, or a pull request cannot
-  assume it. Sessions last at most one hour and are minted per job; nothing is stored.
+  `repo:SGit-AI/SGit-AI__API` and only from three subjects: `environment:dev`, `environment:main`,
+  `environment:prod` (the deploy job runs inside the stage's GitHub Environment, so the token
+  carries that claim). A fork, a pull request, or a job outside those environments cannot assume it. Sessions last at most one hour and are minted per job; nothing is stored.
 - **Permissions, all name-scoped where the service allows it:**
   - CloudFormation on stacks named `sgit-vaults-*`
   - Lambda + CloudWatch Logs on `sgit-vaults-*` functions and their log groups

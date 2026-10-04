@@ -32,7 +32,8 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with:
+          python-version: '3.12'
       - name: Install the CLI, the legacy server, and this repo
         run: |
           pip install -r tests/regression/requirements.txt

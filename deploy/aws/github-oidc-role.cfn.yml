@@ -53,11 +53,12 @@ Resources:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
               # Only these refs/environments of this one repository may assume the role:
-              # dev and main branches (push), and the "prod" GitHub Environment (manual, approved).
+              # the three GitHub Environments dev / main / prod (a job that deploys runs inside one;
+              # the token's subject then carries environment:<name>, not the branch ref).
               StringLike:
                 token.actions.githubusercontent.com:sub:
-                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/dev'
-                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:ref:refs/heads/main'
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:dev'
+                  - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:main'
                   - !Sub 'repo:${GitHubOrg}/${GitHubRepo}:environment:prod'
       Policies:
         - PolicyName: sgit-vaults-deploy

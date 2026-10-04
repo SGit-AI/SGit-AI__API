@@ -24,7 +24,7 @@ here must be labelled "PROPOSED — does not exist yet."
 | Version tests | `tests/unit/test_Version.py` | 3 tests |
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
 | **sgit parity gate** | `tests/regression/` (scenarios, conftest, test) + `.github/workflows/regression-parity.yml` | 5 invariant tests + 5 parity tests (skip until a NEW endpoint exists); real CLI + real HTTP against real servers (legacy in-process from PyPI, or any URL). Verified 4 Oct: 5/5 invariants green on legacy in-process; legacy-vs-live differs only by the edge 403→404 rule (pack Q11) |
-| Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests (leak guard now covers `programme/` too); real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
+| Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests (leak guard covers `programme/`; **the clone test flipped 4 Oct: sgit-ai 0.17.0 clones from a static host with GETs only** — the gap closed); real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
 
 ### The deploy.sgit.ai vault (conformance target + SGit API docs + sgit deploy section)
 
@@ -43,7 +43,7 @@ here must be labelled "PROPOSED — does not exist yet."
 Code-verified conformance findings (2026-08-17, sgit-ai v0.15.0):
 - Every committed vault object is fetchable byte-identical by plain GET at the live-API path shape — the static read claim **holds** at the storage layer.
 - The named-ref filename derives from the read key alone (`Vault__Crypto.derive_ref_file_id`) — no listing/discovery call exists.
-- **Gap (pinned by test):** `sgit clone` depends on `POST /api/vault/batch/…` and fails against a static host; the browser transport's `SG_STATIC` fan-out has no CLI equivalent yet.
+- ~~Gap: `sgit clone` depends on the batch endpoint~~ **Closed 4 Oct 2026**: sgit-ai 0.17.0 (PyPI, 3 Oct) falls back to a static read-only transport on 404/405/501 from the batch endpoint; `test__cli_clones_from_a_static_host` asserts the clone succeeds and matches `vault/` byte for byte.
 - A never-pushed vault's named ref points at the empty init commit — `sgit push` (to any SG/Send server, including a local in-memory one) is what forwards it. The committed `bare/` mirror is byte-parity with the server after push.
 
 ### CI

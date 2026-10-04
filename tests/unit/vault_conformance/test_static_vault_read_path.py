@@ -15,8 +15,9 @@ from sgit_ai.crypto.Vault__Crypto import Vault__Crypto
 # The product claim under test: the server is storage which reads nothing — every read is
 # a GET of a path computed from a key, so a host that can only serve files is a complete
 # read endpoint. Anything that breaks against a plain static file server is a hidden
-# dependency on server behaviour. Exactly three things are expected to break: batch reads
-# (the real gap), writes and authentication (both intended for a published vault).
+# dependency on server behaviour. Exactly two things are expected to break: writes and
+# authentication (both intended for a published vault). Batch reads were the third until the
+# CLI gained a static transport (Oct 2026); the clone test now asserts success.
 #
 # The "server" here is a real static file host (stdlib ThreadingHTTPServer serving bytes
 # off disk) — not a mock of the SG/Send API. It serves the repository's reference vault
@@ -138,13 +139,14 @@ class test_Static_Vault_Read_Path(TestCase):
         with urllib.request.urlopen(url) as response:
             assert response.status == 200                                               # …and one plain GET fetches it statically
 
-    # -- the one real gap, pinned: the CLI clone depends on the batch endpoint --------
+    # -- the gap closed: the CLI clones from a static host with GETs only ------------------
 
-    def test__cli_clone_stops_at_batch(self):
-        # GOOD FAILURE ahead: when the sgit CLI ships static fan-out (batch reads
-        # falling back to parallel GETs, as the browser transport already does), this
-        # test SHOULD break — replace it with an assertion that the clone succeeds and
-        # the checked-out files match vault/'s working tree.
+    def test__cli_clones_from_a_static_host(self):
+        # This test was pinned the other way round (clone MUST fail on a static host) from
+        # 17 Aug until 4 Oct 2026, when a fresh CI runner installed a sgit-ai that falls back
+        # to "the static read-only transport" on HTTP 404/405/501 from the batch endpoint and
+        # the clone succeeded. The conformance loop is now closed: the published projection
+        # IS a complete read endpoint for the CLI, not only for the browser.
         sgit = shutil.which('sgit')
         assert sgit is not None, 'sgit CLI not installed — it is in requirements-test.txt'
 
@@ -157,9 +159,12 @@ class test_Static_Vault_Read_Path(TestCase):
                                    capture_output=True, text=True, timeout=120)
         seen      = list(Static_Vault_Handler.requests_seen)
 
-        batch_posts = [r for r in seen if r[0] == 'POST' and f'/api/vault/batch/{VAULT_ID}' in r[1]]
-        assert batch_posts != []                                                        # the clone reached for the batch endpoint,
-        assert result.returncode != 0                                                   # which a static host does not have: the pinned gap
+        assert result.returncode == 0, f'static clone failed:\n{result.stdout}\n{result.stderr}'
+        assert all(r[0] == 'GET' for r in seen if r[2] == 200)                         # every byte that arrived came by GET
+        for file in sorted(p for p in VAULT_DIR.rglob('*') if p.is_file() and '.sg_vault' not in p.parts):
+            rel = file.relative_to(VAULT_DIR)
+            assert (clone_dir / rel).is_file(),            f'missing in clone: {rel}'
+            assert (clone_dir / rel).read_bytes() == file.read_bytes(), f'content drift: {rel}'
 
 
 def _tempdir():
