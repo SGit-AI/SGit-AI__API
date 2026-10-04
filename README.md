@@ -1,6 +1,6 @@
 # SGit-AI__API
 
-![release](https://img.shields.io/badge/release-v0.1.8-blue)
+![release](https://img.shields.io/badge/release-v0.1.9-blue)
 
 **The server side of the sgit protocol** — the deployable API service consumed by the
 [`sgit` CLI](https://github.com/SGit-AI/SGit-AI__CLI) (PyPI: `sgit-ai`) and the vault web UI.
