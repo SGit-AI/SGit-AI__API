@@ -1,8 +1,9 @@
 # The regression gate for the vaults.sgit.ai move: the same sgit-driven scenarios against
 # the legacy vault API and the new one, observations compared structurally.
 #
-#   invariants  — always: boots the legacy app in-process from PyPI (the API as it is today)
-#   parity      — once sgit_vaults exists in this repo: legacy (PyPI) vs new (this checkout)
+#   invariants  — always: boots the legacy app in-process from the origin repo's baseline git archive
+#                 (5d50ae8 = dev v0.33.69, the API as it runs today; PyPI only carries major releases)
+#   parity      — once sgit_vaults exists in this repo: legacy (baseline) vs new (this checkout)
 #   deployed    — manual: point SG_NEW_URL at a deployed target before cutting over to it
 #
 # No mocks. No cloud credentials. Nothing here may be green while a behaviour differs.
@@ -24,7 +25,7 @@ on:
 
 jobs:
   parity:
-    name: "legacy (PyPI) vs new (${{ inputs.new_url || 'in-process' }})"
+    name: "legacy (baseline archive) vs new (${{ inputs.new_url || 'in-process' }})"
     runs-on: ubuntu-latest
     env:
       SEND__STORAGE_MODE  : memory          # the legacy app auto-selects S3 when AWS creds exist; never here

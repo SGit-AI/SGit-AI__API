@@ -96,7 +96,7 @@ jobs:
           retention-days: 1
 
   deploy:
-    name: "Deploy stage: ${{ inputs.stage }}"
+    name: Deploy the stage stack
     runs-on: ubuntu-latest
     needs: [build-image, check-role]
     if: needs.check-role.outputs.has-role == 'true'
@@ -144,7 +144,7 @@ jobs:
           echo "Deployed ${{ inputs.stage }}: $(q PublicUrl)"
 
   verify:
-    name: "Smoke + parity gate against the live ${{ inputs.stage }} stack"
+    name: Smoke + parity gate against the live stack
     runs-on: ubuntu-latest
     needs: [deploy]
     env:
