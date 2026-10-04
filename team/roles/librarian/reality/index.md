@@ -23,6 +23,7 @@ here must be labelled "PROPOSED — does not exist yet."
 |---|---|---|
 | Version tests | `tests/unit/test_Version.py` | 3 tests |
 | Package tests | `tests/unit/test__sgit_ai_api.py` | 3 tests |
+| **sgit parity gate** | `tests/regression/` (scenarios, conftest, test) + `.github/workflows/regression-parity.yml` | 5 invariant tests + 5 parity tests (skip until a NEW endpoint exists); real CLI + real HTTP against real servers (legacy in-process from PyPI, or any URL). Verified 4 Oct: 5/5 invariants green on legacy in-process; legacy-vs-live differs only by the edge 403→404 rule (pack Q11) |
 | Static-vault conformance | `tests/unit/vault_conformance/test_static_vault_read_path.py` | 5 tests (leak guard now covers `programme/` too); real static file server (stdlib) + real `sgit` CLI + real `sgit_ai` crypto — no mocks |
 
 ### The deploy.sgit.ai vault (conformance target + SGit API docs + sgit deploy section)

@@ -86,7 +86,7 @@ Mode 3 replaces mode 2's *hosted* use and is what makes a fleet of deployments s
 ## 6. Rotation and backup as orchestration
 
 - **What can rotate**: access tokens (records in the credentials vault: issue new, revoke old — the token is a *record*, not an address); principals' keys (same); append tokens (re-`configure`, exists); share tokens (exists); the deployment's own keypair (re-issue + re-share the supporting vaults' read keys to it).
-- **What cannot**: a vault key. The key is the identity; the only move is *migrate* (new vault, re-share). Say so in the docs; do not promise weekly vault-key rotation.
+- **Vault keys rotate by migration, and the CLI has a verb for it**: `sgit vault rekey` = `check` → `wipe` (local store only) → `init --new-key` → `commit` → push. The result is a *new* vault id (the id is derived from the key), so every holder of the old key or read key must be re-shared, and the old vault must be destroyed on the server (`sgit vault delete-on-remote`). Weekly vault-key rotation is therefore possible but is a re-share event, not an in-place swap; schedule it only for vaults whose readers are machines you control (the supporting vaults), not for tenant vaults.
 - **The job**: a scheduled workflow (GitHub Actions cron in the deployment's repo, or a Lambda on a schedule) that runs `sgit` against the supporting vaults: issue → publish → revoke-after-grace, then `sgit export` of each supporting vault into the backup vault, then a **restore drill** (clone the backup, open it, compare). Weekly is fine; the drill is the point.
 - **The invariant**: every rotation is a commit in a vault, so the history *is* the audit log.
 

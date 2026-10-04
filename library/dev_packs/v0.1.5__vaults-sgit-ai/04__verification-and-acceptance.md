@@ -18,6 +18,7 @@ The August pack compared zip members. A transformation cannot be verified that w
 | Protocol | `tests/conformance` (static-read suite, real `sgit` CLI) | 5 | 5 (flips to a full clone when the CLI ships static transport) |
 | Deployed | `test_smoke__deployed_target.py` | 8/8 vs local container | 8/8 vs Docker, Lambda, Fargate, EC2 |
 | End to end | `sgit init/commit/push/clone` against each deployed target; open the vault in the served web | — | round-trip on every target |
+| **Parity gate** | `tests/regression/` — five sgit-driven scenarios (round-trip, second push + pull, API contract, pointer API, append lane) run against legacy and new; observations compared structurally | 5 invariants green on legacy in-process; legacy-vs-live-legacy equal except the edge 403→404 rule (Q11) | zero differences legacy vs new, in-process; then vs the deployed target before cutover (`regression-parity.yml`, `workflow_dispatch` with the URL) |
 
 **Allowed differences, and nothing else:** import paths, package/module names, the `versions()` key, env variable *aliases* (old names still work), file layout, build steps, deploy artefact names, the S3 root (a deploy-time value). **Any assertion that needs editing to pass is a defect** — record it in `05` and escalate; do not edit the assertion.
 

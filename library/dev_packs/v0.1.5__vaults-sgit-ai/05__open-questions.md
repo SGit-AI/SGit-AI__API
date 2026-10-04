@@ -33,6 +33,7 @@ Resolve §1 and §2 before step 2 of the plan. §3 is written during the work. E
 | Q8 | **Terraform scope**: AWS only (mirror the three CFN shapes) or GCP too | net-new work; README test scope | **AWS only**; Cloud Run stays a documented command | |
 | Q9 | **`check-token` indicator** in the vault web (`vault-header`, `vault-settings`, `vault-credentials`) calls a Send route | see `01` §4.1 | keep calling the Send host during the grace period; record `GET /api/info/token` as an Explorer follow-up | |
 | Q10 | **Grace period** length for the old host and the redirects | rollback window (`04` §4) | 90 days | |
+| Q11 | **The edge 403→404 rewrite.** `dev.send.sgraph.ai`'s CloudFront applies the static site's `403 → /404.html` rule to `/api/*`, so gate failures (wrong write key, wrong enum key, bad append token) reach clients as 404. The parity gate (`tests/regression/`) found it on 4 Oct: in-process 403 vs live 404 on three probes | the new CloudFront for vaults.sgit.ai must **not** carry that rule, or the contract changes at the edge; and the deployed-mode gate must run against the origin (Lambda URL) as well as the edge | new distribution without the custom error response for `/api/*`; gate runs both | |
 
 ## 3. The Record (written during the work)
 

@@ -1,0 +1,8 @@
+# The parity gate drives real servers with the real CLI.
+sgit-ai
+requests
+pytest
+# legacy server, in-process (the vault API as it is today, from PyPI)
+sgraph-ai-app-send
+mcp<2            # fastapi-mcp 0.4.0 calls Server() positionally; mcp 2.x made those args keyword-only
+uvicorn

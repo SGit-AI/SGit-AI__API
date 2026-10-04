@@ -1,0 +1,45 @@
+# The regression gate for the vaults.sgit.ai move: the same sgit-driven scenarios against
+# the legacy vault API and the new one, observations compared structurally.
+#
+#   invariants  — always: boots the legacy app in-process from PyPI (the API as it is today)
+#   parity      — once sgit_vaults exists in this repo: legacy (PyPI) vs new (this checkout)
+#   deployed    — manual: point SG_NEW_URL at a deployed target before cutting over to it
+#
+# No mocks. No cloud credentials. Nothing here may be green while a behaviour differs.
+
+name: Regression — sgit parity gate
+
+on:
+  push:
+    branches: [dev]
+    paths: ['sgit_vaults/**', 'tests/regression/**', '.github/workflows/regression-parity.yml']
+  pull_request:
+    paths: ['sgit_vaults/**', 'tests/regression/**']
+  workflow_dispatch:
+    inputs:
+      new_url:
+        description: 'Deployed NEW endpoint to gate (e.g. https://dev.vaults.sgit.ai); empty = in-process'
+        required: false
+        default: ''
+
+jobs:
+  parity:
+    name: "legacy (PyPI) vs new (${{ inputs.new_url || 'in-process' }})"
+    runs-on: ubuntu-latest
+    env:
+      SEND__STORAGE_MODE  : memory          # the legacy app auto-selects S3 when AWS creds exist; never here
+      VAULTS__STORAGE_MODE: memory
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.12' }
+      - name: Install the CLI, the legacy server, and this repo
+        run: |
+          pip install -r tests/regression/requirements.txt
+          pip install -e . || true          # sgit_vaults, once the package exists; harmless before
+      - name: Invariants + parity
+        env:
+          SG_LEGACY_URL: inprocess
+          SG_NEW_URL   : ${{ inputs.new_url || 'inprocess' }}
+          SG_NEW_TOKEN : ${{ secrets.SG_NEW_TOKEN }}
+        run: python -m pytest tests/regression -q -rs --tb=short
