@@ -11,6 +11,9 @@ on:
         default: false
 jobs:
   dev:
+    permissions:
+      id-token: write      # a called workflow cannot hold more than its caller grants; OIDC needs this here
+      contents: read
     uses: ./.github/workflows/deploy-aws-lambda.yml
     with:
       stage: dev
